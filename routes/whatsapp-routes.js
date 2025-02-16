@@ -1,8 +1,8 @@
-const express = require("express");
-const { sendMessage } = require("../controllers/whatsapp-controller");
+// const express = require("express");
+// const { sendMessage } = require("../controllers/whatsapp-controller");
 
-const router = express.Router();
+// const router = express.Router();
 
-router.post("/send-message", sendMessage);
+// router.post("/send-message", sendMessage);
 
-module.exports = router;
+// module.exports = router;
