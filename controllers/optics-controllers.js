@@ -52,7 +52,7 @@ const getFormDataByBillNo = async (req, res) => {
         console.error("Error fetching form entry:", error);
         res.status(500).json({ success: false, error: error.message });
     }
-};
+}
 
 
 module.exports = { createFormData, getAllFormData , getFormDataByBillNo};
