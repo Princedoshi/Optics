@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
 const FormDataSchema = new mongoose.Schema({
+    billNo: { type: Number, unique: true }, 
     name: { type: String, required: true },
     contact: { type: String, required: true },
     date: { type: String, required: true },
@@ -32,5 +33,4 @@ const FormDataSchema = new mongoose.Schema({
 });
 
 const FormDataModel = mongoose.model("FormData", FormDataSchema);
-
 module.exports = FormDataModel;
