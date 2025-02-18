@@ -2,10 +2,14 @@ const FormDataModel = require("../models/optics-model");
 const Memcached = require("memcached");
 
 
-const cache = new Memcached(``, {
+const cache = new Memcached(process.env.MEMCACHED_SERVERS, {
     username: process.env.MEMCACHED_USERNAME,
     password: process.env.MEMCACHED_PASSWORD,
 });
+
+console.log("MEMCACHED_SERVERS:", process.env.MEMCACHED_SERVERS);
+console.log("MEMCACHED_USERNAME:", process.env.MEMCACHED_USERNAME);
+console.log("MEMCACHED_PASSWORD:", process.env.MEMCACHED_PASSWORD);
 
 const checkMemcachedConnection = () => {
     return new Promise((resolve, reject) => {
