@@ -1,7 +1,51 @@
 const FormDataModel = require("../models/optics-model");
+const Memcached = require("memcached");
 
-// @desc    Create Form Data with Auto Incrementing Bill Number
-// @route   POST /api/forms/add-form
+
+const cache = new Memcached(``, {
+    username: `{process.env.MEMCACHED_USERNAME}`,
+    password: `{process.env.MEMCACHED_PASSWORD}`,
+});
+
+const getAllFormData = async (req, res) => {
+    try {
+        const getCacheData = (key) => {
+            return new Promise((resolve, reject) => {
+                cache.get(key, (err, data) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(data);
+                    }
+                });
+            });
+        };
+
+        const cachedData = await getCacheData("allData");
+        
+        if (cachedData) {
+            console.log("Returning data from cache");
+            return res.status(200).json(JSON.parse(cachedData));
+        } else {
+            console.log("Fetching data from the database");
+            const allData = await FormDataModel.find();
+            cache.set("allData", JSON.stringify(allData), 3600, (err) => {
+                if (err) {
+                    console.error("Error caching data:", err);
+                }
+                console.log("Data cached in Memcached");
+            });
+
+            return res.status(200).json(allData);
+        }
+
+    } catch (error) {
+        console.error("Error fetching all form data:", error);
+        res.status(500).json({ error: "Failed to retrieve data" });
+    }
+};
+
+
 const createFormData = async (req, res) => {
     try {
         const lastEntry = await FormDataModel.findOne().sort({ billNo: -1 });
@@ -14,6 +58,16 @@ const createFormData = async (req, res) => {
         });
 
         await newFormData.save();
+        
+        // Invalidate cache after new data is added
+        cache.del("allData", (err) => {
+            if (err) {
+                console.error("Error deleting cache:", err);
+            } else {
+                console.log("Cache invalidated for allData");
+            }
+        });
+
         res.status(201).json({ success: true, data: newFormData });
     } catch (error) {
         console.error("Error creating form entry:", error);
@@ -21,22 +75,9 @@ const createFormData = async (req, res) => {
     }
 };
 
-
-// @desc    Get All Form Data
-// @route   GET /api/forms/get-data
-const getAllFormData = async (req, res) => {
-    try {
-        const allData = await FormDataModel.find(); // Retrieve all records
-        res.status(200).json(allData);
-    } catch (error) {
-        res.status(500).json({ error: "Failed to retrieve data" });
-    }
-};
-
-
 const getFormDataByBillNo = async (req, res) => {
     try {
-        const billNo = parseInt(req.params.billNo, 10); // Convert billNo to a number
+        const billNo = parseInt(req.params.billNo, 10);
         if (isNaN(billNo)) {
             return res.status(400).json({ success: false, error: "Invalid bill number" });
         }

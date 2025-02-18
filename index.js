@@ -5,8 +5,6 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const formRoutes = require("./routes/optics-routes");
 // const whatsappRoutes = require("./routes/whatsapp-routes");
-
-
 dotenv.config();
 
 connectDB();
