@@ -3,9 +3,29 @@ const Memcached = require("memcached");
 
 
 const cache = new Memcached(``, {
-    username: `{process.env.MEMCACHED_USERNAME}`,
-    password: `{process.env.MEMCACHED_PASSWORD}`,
+    username: process.env.MEMCACHED_USERNAME,
+    password: process.env.MEMCACHED_PASSWORD,
 });
+
+const checkMemcachedConnection = () => {
+    return new Promise((resolve, reject) => {
+        cache.stats((err, stats) => {
+            if (err) {
+                console.error("Memcached connection failed:", err);
+                reject(false);
+            } else {
+                console.log("Memcached connected successfully:", stats);
+                resolve(true);
+            }
+        });
+    });
+};
+
+// Example usage:
+checkMemcachedConnection()
+    .then(() => console.log("Memcached is up and running!"))
+    .catch(() => console.log("Memcached is not available."));
+
 
 const getAllFormData = async (req, res) => {
     try {
