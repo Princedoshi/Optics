@@ -5,12 +5,13 @@ const FormDataSchema = new mongoose.Schema({
     name: { type: String, required: true },
     contact: { type: String, required: true },
     date: { type: String, required: true },
-    frame: { type: String }, // Not required
-    glass: { type: String }, // Not required
-    contactLens: { type: String }, // Not required
-    advance: { type: String }, // Not required
-    balance: { type: String }, // Not required
+    frame: { type: String },
+    glass: { type: String }, 
+    contactLens: { type: String }, 
+    advance: { type: String }, 
+    balance: { type: String }, 
     total: { type: String, required: true },
+    paymentStatus: { type: String, enum: ["pending", "completed"], required: true, default: "pending" },
     prescription: {
         dist: {
             rightSph: { type: String },

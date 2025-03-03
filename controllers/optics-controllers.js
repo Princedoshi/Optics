@@ -1,46 +1,11 @@
 const FormDataModel = require("../models/optics-model");
-const NodeCache = require("node-cache");
-
-const cache = new NodeCache({ stdTTL: 3600 }); // Cache expires after 1 hour
-
-console.log("Node Cache initialized");
-
-const checkCacheConnection = () => {
-    console.log("Checking Node Cache...");
-    try {
-        cache.set("testKey", "testValue");
-        if (cache.get("testKey") === "testValue") {
-            console.log("Node Cache is working correctly");
-            return true;
-        }
-    } catch (error) {
-        console.error("Node Cache error:", error);
-        return false;
-    }
-};
-
-checkCacheConnection();
-
 
 const getAllFormData = async (req, res) => {
     try {
-        const cachedData = cache.get("allData");
-
-        if (cachedData) {
-            console.log("Returning data from cache");
-            return res.status(200).json(cachedData);
-        } else {
-            console.log("Fetching data from the database");
-            const allData = await FormDataModel.find();
-            
-            // Convert Mongoose documents to plain objects before caching
-            const plainData = JSON.parse(JSON.stringify(allData));
-
-            cache.set("allData", plainData);
-            console.log("Data cached in Node Cache");
-
-            return res.status(200).json(plainData);
-        }
+        console.log("Fetching data from the database");
+        const allData = await FormDataModel.find();
+        const plainData = JSON.parse(JSON.stringify(allData));
+        return res.status(200).json(plainData);
     } catch (error) {
         console.error("Error fetching all form data:", error);
         res.status(500).json({ error: "Failed to retrieve data" });
@@ -50,7 +15,6 @@ const getAllFormData = async (req, res) => {
 const createFormData = async (req, res) => {
     try {
         const lastEntry = await FormDataModel.findOne().sort({ billNo: -1 });
-
         const newBillNo = lastEntry && !isNaN(lastEntry.billNo) ? lastEntry.billNo + 1 : 1;
 
         const newFormData = new FormDataModel({
@@ -59,10 +23,6 @@ const createFormData = async (req, res) => {
         });
 
         await newFormData.save();
-
-        // Invalidate cache after new data is added
-        cache.del("allData");
-        console.log("Cache invalidated for allData");
 
         res.status(201).json({ success: true, data: newFormData });
     } catch (error) {
@@ -78,22 +38,11 @@ const getFormDataByBillNo = async (req, res) => {
             return res.status(400).json({ success: false, error: "Invalid bill number" });
         }
 
-        const cacheKey = `billNo_${billNo}`;
-        const cachedFormData = cache.get(cacheKey);
-
-        if (cachedFormData) {
-            console.log(`Returning cached data for billNo ${billNo}`);
-            return res.status(200).json({ success: true, data: cachedFormData });
-        }
-
         const formData = await FormDataModel.findOne({ billNo });
 
         if (!formData) {
             return res.status(404).json({ success: false, error: "Form data not found" });
         }
-
-        cache.set(cacheKey, formData);
-        console.log(`Data cached for billNo ${billNo}`);
 
         res.status(200).json({ success: true, data: formData });
     } catch (error) {
@@ -102,4 +51,42 @@ const getFormDataByBillNo = async (req, res) => {
     }
 };
 
-module.exports = { createFormData, getAllFormData, getFormDataByBillNo };
+const getPendingPayments = async (req, res) => {
+    try {
+        console.log("Fetching pending payments from the database");
+        const pendingData = await FormDataModel.find({ paymentStatus: "pending" });
+        const plainData = JSON.parse(JSON.stringify(pendingData));
+        return res.status(200).json(plainData);
+    } catch (error) {
+        console.error("Error fetching pending payment data:", error);
+        res.status(500).json({ error: "Failed to retrieve pending payment data" });
+    }
+};
+
+const updatePendingStatus = async (req, res) => {
+    try {
+        const billNo = parseInt(req.params.billNo, 10);
+        if (isNaN(billNo)) {
+            return res.status(400).json({ success: false, error: "Invalid bill number" });
+        }
+
+        const updatedForm = await FormDataModel.findOneAndUpdate(
+            { billNo, paymentStatus: "pending" }, // Find the entry with "pending" status
+            { paymentStatus: "paid" }, // Update status to "paid"
+            { new: true } // Return updated document
+        );
+
+        if (!updatedForm) {
+            return res.status(404).json({ success: false, error: "Pending payment not found" });
+        }
+
+        res.status(200).json({ success: true, message: "Payment status updated to paid", data: updatedForm });
+    } catch (error) {
+        console.error("Error updating payment status:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+
+
+module.exports = { createFormData, getAllFormData, getFormDataByBillNo ,getPendingPayments,updatePendingStatus};
