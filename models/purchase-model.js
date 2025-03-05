@@ -8,7 +8,7 @@ const PurchaseHistorySchema = new mongoose.Schema({
     items: [
         {
             itemName: { type: String, required: true },
-            category: { type: String, enum: ["Frame", "Glass", "Contact Lens", "Other"], required: true },
+            category: { type: String, required: true },
             quantity: { type: Number, required: true },
             unitPrice: { type: Number, required: true },
             totalPrice: { type: Number, required: true }

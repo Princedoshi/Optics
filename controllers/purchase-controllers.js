@@ -3,6 +3,7 @@ const PurchaseHistoryModel = require("../models/purchase-model");
 
 const createPurchase = async (req, res) => {
     try {
+        console.log("trying")
         const purchaseCount = await PurchaseHistoryModel.countDocuments();
         const newPurchase = new PurchaseHistoryModel({
             ...req.body,
@@ -12,6 +13,7 @@ const createPurchase = async (req, res) => {
         await newPurchase.save();
         res.status(201).json({ message: "Purchase recorded successfully", purchase: newPurchase });
     } catch (error) {
+        console.log(error)
         res.status(500).json({ message: "Error creating purchase", error: error.message });
     }
 };
