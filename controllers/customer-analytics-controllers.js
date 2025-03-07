@@ -35,7 +35,6 @@ const getMonthlyCustomerData = async (req, res) => {
 
 const getMonthlyRevenueData = async (req, res) => {
     try {
-        console.log("Fetching monthly revenue data");
         const currentDate = new Date();
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth() + 1; 
@@ -69,7 +68,6 @@ const getMonthlyRevenueData = async (req, res) => {
 
 const getTopFrames = async (req, res) => {
     try {
-        console.log("Fetching top frames data");
         const frameSales = await FormDataModel.aggregate([
             { $match: { frame: { $ne: null } } },
             { $group: { _id: "$frame", count: { $sum: 1 } } },
