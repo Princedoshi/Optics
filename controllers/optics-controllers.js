@@ -2,7 +2,6 @@ const FormDataModel = require("../models/optics-model");
 
 const getAllFormData = async (req, res) => {
     try {
-        console.log("Fetching data from the database");
         const allData = await FormDataModel.find();
         const plainData = JSON.parse(JSON.stringify(allData));
         return res.status(200).json(plainData);
@@ -53,7 +52,6 @@ const getFormDataByBillNo = async (req, res) => {
 
 const getPendingPayments = async (req, res) => {
     try {
-        console.log("Fetching pending payments from the database");
         const pendingData = await FormDataModel.find({ paymentStatus: "pending" });
         const plainData = JSON.parse(JSON.stringify(pendingData));
         return res.status(200).json(plainData);

@@ -5,7 +5,6 @@ const getMonthlyRevenueDataByYear = async (req, res) => {
 
     try {
         const { year } = req.params;
-        console.log("year:  ",year);
 
         if (!year) {
             return res.status(400).json({ success: false, error: "Year is required" });
@@ -25,9 +24,6 @@ const getMonthlyRevenueDataByYear = async (req, res) => {
             const revenue = parseFloat(order.total) || 0; 
             monthlyRevenue[month - 1].count += revenue;
         });
-
-        console.log("data",monthlyRevenue);
-
         res.status(200).json({ success: true, data: monthlyRevenue });
     } catch (error) {
         console.error("Error fetching monthly revenue data by year:", error);
