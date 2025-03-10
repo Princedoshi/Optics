@@ -4,7 +4,8 @@ const {
     getAllFormData, 
     getFormDataByBillNo,
     getPendingPayments,
-    updatePendingStatus
+    updatePendingStatus,
+    getPendingPaymentByBillNo
 } = require("../controllers/optics-controllers");
 
 const { 
@@ -57,6 +58,7 @@ router.get("/purchases/monthly", getMonthlyPurchaseDistribution);
 //Pending Payments
 router.get("/pending-payments", getPendingPayments);
 router.put("/update-pending-status/:billNo", updatePendingStatus);
+router.get("/pending-payments/:billNo",getPendingPaymentByBillNo)
 
 //Order Analytics
 

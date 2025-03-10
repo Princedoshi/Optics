@@ -69,7 +69,7 @@ const updatePendingStatus = async (req, res) => {
         }
 
         const updatedForm = await FormDataModel.findOneAndUpdate(
-            { billNo, paymentStatus: "pending" }, // Find the entry with "pending" status
+            { billNo, paymentStatus: "pending" }, 
             { paymentStatus: "paid" }, // Update status to "paid"
             { new: true } // Return updated document
         );
@@ -85,6 +85,26 @@ const updatePendingStatus = async (req, res) => {
     }
 };
 
+const getPendingPaymentByBillNo = async (req, res) => {
+    try {
+        const billNo = parseInt(req.params.billNo, 10);
+        if (isNaN(billNo)) {
+            return res.status(400).json({ success: false, error: "Invalid bill number" });
+        }
+
+        const pendingPayment = await FormDataModel.findOne({ billNo, paymentStatus: "pending" });
+
+        if (!pendingPayment) {
+            return res.status(404).json({ success: false, error: "No pending payment found for this bill number" });
+        }
+
+        res.status(200).json({ success: true, data: pendingPayment });
+    } catch (error) {
+        console.error("Error fetching pending payment by billNo:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
 
 
-module.exports = { createFormData, getAllFormData, getFormDataByBillNo ,getPendingPayments,updatePendingStatus};
+
+module.exports = { createFormData, getAllFormData, getFormDataByBillNo ,getPendingPayments,updatePendingStatus,getPendingPaymentByBillNo};
