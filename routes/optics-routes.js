@@ -1,29 +1,31 @@
 const express = require("express");
-const { 
-    createFormData, 
-    getAllFormData, 
-    getFormDataByBillNo,
-    getPendingPayments,
-    updatePendingStatus,
-    getPendingPaymentByBillNo
+const authenticate = require("../middlewares/authMiddleware");
+
+const {
+  createFormData,
+  getAllFormData,
+  getFormDataByBillNo,
+  getPendingPayments,
+  updatePendingStatus,
+  getPendingPaymentByBillNo
 } = require("../controllers/optics-controllers");
 
-const { 
-    getMonthlyCustomerData, 
-    getMonthlyRevenueData, 
-    getTopFrames, 
-    getCustomerDataByYear, 
-    getNewCustomers 
+const {
+  getMonthlyCustomerData,
+  getMonthlyRevenueData,
+  getTopFrames,
+  getCustomerDataByYear,
+  getNewCustomers
 } = require("../controllers/customer-analytics-controllers");
 
 const { getMonthlyRevenueDataByYear } = require("../controllers/revenue-analytics-controllers");
 
-const { 
-    createPurchase, 
-    getAllPurchases, 
-    getPurchaseById,
-    updatePaymentStatus,
-    makePartialPayment
+const {
+  createPurchase,
+  getAllPurchases,
+  getPurchaseById,
+  updatePaymentStatus,
+  makePartialPayment
 } = require("../controllers/purchase-controllers");
 
 const { getMonthlyPurchaseDistribution } = require("../controllers/purchase-analytics");
@@ -31,6 +33,9 @@ const { getMonthlyPurchaseDistribution } = require("../controllers/purchase-anal
 const { getSalesSummary } = require("../controllers/order-analytics-controllers");
 
 const router = express.Router();
+
+// ✅ Apply the middleware globally
+router.use(authenticate);
 
 // Form Data Routes
 router.post("/add-form", createFormData);
@@ -48,22 +53,21 @@ router.get("/revenue/monthly", getMonthlyRevenueData);
 router.get("/revenue/monthly/:year", getMonthlyRevenueDataByYear);
 
 // Purchase History Routes
-router.post("/add-purchase", createPurchase); // Create a purchase
-router.get("/get-purchases", getAllPurchases); // Get all purchase records
-router.get("/get-purchase/:id", getPurchaseById); // Get a single purchase by purchaseId
-router.put("/update-paymentStatus/:id", updatePaymentStatus); // Update payment status
-router.patch("/partial-payments/:id", makePartialPayment); // Make partial payments
+router.post("/add-purchase", createPurchase);
+router.get("/get-purchases", getAllPurchases);
+router.get("/get-purchase/:id", getPurchaseById);
+router.put("/update-paymentStatus/:id", updatePaymentStatus);
+router.patch("/partial-payments/:id", makePartialPayment);
 
-//Purchase Analytics Routes
+// Purchase Analytics Routes
 router.get("/purchases/monthly", getMonthlyPurchaseDistribution);
 
-//Pending Payments
+// Pending Payments
 router.get("/pending-payments", getPendingPayments);
 router.put("/update-pending-status/:billNo", updatePendingStatus);
-router.get("/pending-payments/:billNo",getPendingPaymentByBillNo)
+router.get("/pending-payments/:billNo", getPendingPaymentByBillNo);
 
-//Order Analytics
-
+// Order Analytics
 router.get("/analytics/sales-summary", getSalesSummary);
 
 module.exports = router;

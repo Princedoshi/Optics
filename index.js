@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const mongoose = require("mongoose"); // Import Mongoose
 const connectDB = require("./config/db");
 const formRoutes = require("./routes/optics-routes");
+const authRoutes = require("./routes/authRoutes");
 
 dotenv.config();
 connectDB();
@@ -16,6 +17,8 @@ app.use(cors());
 app.use(bodyParser.json());
 
 app.use("/api/forms", formRoutes);
+app.use("/api/auth", authRoutes);
+
 
 app.delete("/api/clear-db", async (req, res) => {
     try {
