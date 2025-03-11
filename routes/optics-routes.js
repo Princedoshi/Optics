@@ -22,7 +22,8 @@ const {
     createPurchase, 
     getAllPurchases, 
     getPurchaseById,
-    updatePaymentStatus
+    updatePaymentStatus,
+    makePartialPayment
 } = require("../controllers/purchase-controllers");
 
 const { getMonthlyPurchaseDistribution } = require("../controllers/purchase-analytics");
@@ -51,6 +52,7 @@ router.post("/add-purchase", createPurchase); // Create a purchase
 router.get("/get-purchases", getAllPurchases); // Get all purchase records
 router.get("/get-purchase/:id", getPurchaseById); // Get a single purchase by purchaseId
 router.put("/update-paymentStatus/:id", updatePaymentStatus); // Update payment status
+router.patch("/partial-payments/:id", makePartialPayment); // Make partial payments
 
 //Purchase Analytics Routes
 router.get("/purchases/monthly", getMonthlyPurchaseDistribution);

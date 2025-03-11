@@ -1,6 +1,5 @@
 const PurchaseHistoryModel = require("../models/purchase-model");
 
-
 const createPurchase = async (req, res) => {
     try {
         const purchaseCount = await PurchaseHistoryModel.countDocuments();
@@ -63,9 +62,71 @@ const updatePaymentStatus = async (req, res) => {
     }
 };
 
+
+const makePartialPayment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { amountPaid } = req.body;
+
+        if (amountPaid <= 0) {
+            return res.status(400).json({ message: "Amount paid must be greater than zero." });
+        }
+
+        const purchase = await PurchaseHistoryModel.findOne({ purchaseId: id });
+
+        if (!purchase) {
+            return res.status(404).json({ message: "Purchase not found" });
+        }
+
+        if (purchase.paymentStatus === "Paid") {
+            return res.status(400).json({ message: "This purchase is already fully paid." });
+        }
+
+        if (amountPaid > purchase.balanceDue) {
+            return res.status(400).json({ message: "Amount paid cannot exceed the remaining balance." });
+        }
+
+        const parsedAmountPaid = parseFloat(amountPaid);
+
+        const existingAdvancePaid = parseFloat(purchase.advancePaid);
+
+        const newAdvancePaid = existingAdvancePaid + parsedAmountPaid;
+        let newBalanceDue = purchase.balanceDue - parsedAmountPaid;
+
+        let newPaymentStatus = purchase.paymentStatus;
+        if (newBalanceDue <= 0) {
+            newPaymentStatus = "Paid";
+             newBalanceDue = 0;
+        } else {
+            newPaymentStatus = "Partial";
+        }
+
+        const updatedPurchase = await PurchaseHistoryModel.findOneAndUpdate(
+            { purchaseId: id },
+            {
+                $set: {
+                    advancePaid: newAdvancePaid,
+                    balanceDue: newBalanceDue,
+                    paymentStatus: newPaymentStatus
+                }
+            },
+            { new: true }
+        );
+
+        res.status(200).json({ message: "Payment recorded successfully", purchase: updatedPurchase });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error recording partial payment", error: error.message });
+    }
+};
+
+
+
 module.exports = {
     createPurchase,
     getAllPurchases,
     getPurchaseById,
-    updatePaymentStatus
+    updatePaymentStatus,
+    makePartialPayment
 };
