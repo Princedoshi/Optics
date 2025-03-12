@@ -39,6 +39,8 @@ const getPurchaseById = async (req, res) => {
 
 const updatePaymentStatus = async (req, res) => {
     try {
+        console.log("req.params", req.params);
+        console.log("req.body", req.body);
         const { id } = req.params;
         const { paymentStatus } = req.body;
 
