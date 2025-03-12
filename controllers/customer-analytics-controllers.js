@@ -2,15 +2,19 @@ const FormDataModel = require("../models/optics-model");
 
 const getMonthlyCustomerData = async (req, res) => {
     try {
+        const { role, branchIds } = req.user;
+        const filter = role === "owner" ? {} : { branchId: { $in: branchIds } };
+
         const currentDate = new Date();
         const year = currentDate.getFullYear();
-        const month = currentDate.getMonth() + 1; 
+        const month = currentDate.getMonth() + 1;
 
         const startDate = `${year}-${month.toString().padStart(2, "0")}-01`;
         const endDate = `${year}-${month.toString().padStart(2, "0")}-31`;
 
         const customers = await FormDataModel.find({
-            date: { $gte: startDate, $lte: endDate } 
+            ...filter, // Apply branch filter
+            date: { $gte: startDate, $lte: endDate }
         });
 
         const dailyCounts = {};
@@ -23,7 +27,7 @@ const getMonthlyCustomerData = async (req, res) => {
         const formattedData = Object.keys(dailyCounts).map((day) => ({
             day: parseInt(day, 10),
             count: dailyCounts[day],
-        })).sort((a, b) => a.day - b.day); 
+        })).sort((a, b) => a.day - b.day);
 
 
         res.status(200).json({ success: true, data: formattedData });
@@ -35,29 +39,33 @@ const getMonthlyCustomerData = async (req, res) => {
 
 const getMonthlyRevenueData = async (req, res) => {
     try {
+        const { role, branchIds } = req.user;
+        const filter = role === "owner" ? {} : { branchId: { $in: branchIds } };
+
         const currentDate = new Date();
         const year = currentDate.getFullYear();
-        const month = currentDate.getMonth() + 1; 
+        const month = currentDate.getMonth() + 1;
 
         const startDate = `${year}-${month.toString().padStart(2, "0")}-01`;
         const endDate = `${year}-${month.toString().padStart(2, "0")}-31`;
 
         const orders = await FormDataModel.find({
-            date: { $gte: startDate, $lte: endDate } 
+            ...filter, // Apply branch filter
+            date: { $gte: startDate, $lte: endDate }
         });
 
         const dailyRevenue = {};
 
         orders.forEach((order) => {
             const day = order.date.split('-')[2];
-            const revenue = parseFloat(order.total) || 0; 
+            const revenue = parseFloat(order.total) || 0;
             dailyRevenue[day] = (dailyRevenue[day] || 0) + revenue;
         });
 
         const formattedData = Object.keys(dailyRevenue).map((day) => ({
             day: parseInt(day, 10),
             revenue: dailyRevenue[day],
-        })).sort((a, b) => a.day - b.day); 
+        })).sort((a, b) => a.day - b.day);
 
         res.status(200).json({ success: true, data: formattedData });
     } catch (error) {
@@ -68,8 +76,11 @@ const getMonthlyRevenueData = async (req, res) => {
 
 const getTopFrames = async (req, res) => {
     try {
+        const { role, branchIds } = req.user;
+        const filter = role === "owner" ? {} : { branchId: { $in: branchIds } };
+
         const frameSales = await FormDataModel.aggregate([
-            { $match: { frame: { $ne: null } } },
+            { $match: { ...filter, frame: { $ne: null } } }, // Apply branch filter
             { $group: { _id: "$frame", count: { $sum: 1 } } },
             { $sort: { count: -1 } },
             { $limit: 5 },
@@ -89,8 +100,10 @@ const getTopFrames = async (req, res) => {
 
 const getCustomerDataByYear = async (req, res) => {
     try {
+        const { role, branchIds } = req.user;
+        const filter = role === "owner" ? {} : { branchId: { $in: branchIds } };
 
-        const { year } = req.params; 
+        const { year } = req.params;
 
         if (!year) {
             return res.status(400).json({ success: false, error: "Year is required" });
@@ -99,6 +112,7 @@ const getCustomerDataByYear = async (req, res) => {
         const monthlyCounts = Array(12).fill(0); // Initialize an array for 12 months
 
         const customers = await FormDataModel.find({
+            ...filter, // Apply branch filter
             date: { $regex: `^${year}-` } // Match all dates starting with "YYYY-"
         });
 
@@ -122,10 +136,14 @@ const getCustomerDataByYear = async (req, res) => {
 
 const getNewCustomers = async (req, res) => {
     try {
+        const { role, branchIds } = req.user;
+        const filter = role === "owner" ? {} : { branchId: { $in: branchIds } };
+
         const currentYear = new Date().getFullYear();
 
         // Fetch all customers for the current year
         const currentYearCustomers = await FormDataModel.find({
+            ...filter,  // Apply branch filter
             date: { $regex: `^${currentYear}-` }
         });
 
@@ -134,6 +152,7 @@ const getNewCustomers = async (req, res) => {
 
         // Find previous customers who had these contacts before the current year
         const previousCustomers = await FormDataModel.find({
+            ...filter, //Apply branch filter
             date: { $not: { $regex: `^${currentYear}-` } },
             contact: { $in: Array.from(currentYearContacts) }
         });

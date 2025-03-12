@@ -4,6 +4,9 @@ const FormDataModel = require("../models/optics-model");
 const getMonthlyRevenueDataByYear = async (req, res) => {
 
     try {
+        const { role, branchIds } = req.user;
+        const filter = role === "owner" ? {} : { branchId: { $in: branchIds } };
+
         const { year } = req.params;
 
         if (!year) {
@@ -16,12 +19,13 @@ const getMonthlyRevenueDataByYear = async (req, res) => {
         }));
 
         const orders = await FormDataModel.find({
-            date: { $regex: `^${year}-` } 
+            ...filter, // Applying branch filtering
+            date: { $regex: `^${year}-` }
         });
 
         orders.forEach((order) => {
             const month = parseInt(order.date.split('-')[1], 10);
-            const revenue = parseFloat(order.total) || 0; 
+            const revenue = parseFloat(order.total) || 0;
             monthlyRevenue[month - 1].count += revenue;
         });
         res.status(200).json({ success: true, data: monthlyRevenue });
