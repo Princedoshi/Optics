@@ -3,36 +3,51 @@ const mongoose = require('mongoose');
 const FormDataModel = require('../models/optics-model');
 const User = require('../models/user');
 const Branch = require('../models/branch');
+const moment = require('moment');
 
-const getBranchStatistics = async (req, res) => {
+const getBranchBusinessToday = async (req, res) => {
   try {
-    const branchStats = await Branch.aggregate([
+    console.log("req.user:", req.user);
+    const owner = req.user;
+
+    if (!owner || owner.role !== 'owner') {
+      return res.status(403).json({ message: 'Unauthorized: Only owners can access this data.' });
+    }
+
+    if (!Array.isArray(owner.branchIds)) {
+      console.error("owner.branchIds is not an array:", owner.branchIds);
+      return res.status(500).json({ message: 'Error: owner.branchIds is not an array' });
+    }
+
+    const ownerBranchIds = owner.branchIds.map(id => {
+      try {
+        return new mongoose.Types.ObjectId(id);
+      } catch (error) {
+        console.warn(`Invalid ObjectId: ${id}. This branch ID will be excluded.`);
+        return null;
+      }
+    }).filter(id => id !== null);
+
+    const todayStart = moment().startOf('day').toDate();
+    const todayEnd = moment().endOf('day').toDate();
+
+    const branchBusiness = await FormDataModel.aggregate([
       {
-        $lookup: {
-          from: 'formdatas',
-          localField: '_id',
-          foreignField: 'branchId',
-          as: 'formData'
-        }
-      },
-      {
-        $unwind: {
-          path: '$formData',
-          preserveNullAndEmptyArrays: true
+        $match: {
+          branchId: { $in: ownerBranchIds },
+          date: { $gte: todayStart, $lte: todayEnd }
         }
       },
       {
         $group: {
-          _id: {
-            branchId: '$_id',
-            branchName: '$name'
-          },
-          totalSales: { $sum: { $toDouble: '$formData.total' } },
+          _id: '$branchId',
+          branchName: { $first: '$branchName' }, 
+          totalSales: { $sum: { $toDouble: '$total' } },
           totalCompletedPayments: {
             $sum: {
               $cond: {
-                if: { $eq: ['$formData.paymentStatus', 'completed'] },
-                then: { $toDouble: '$formData.total' },
+                if: { $eq: ['$paymentStatus', 'paid'] },
+                then: { $toDouble: '$total' },
                 else: 0
               }
             }
@@ -40,8 +55,8 @@ const getBranchStatistics = async (req, res) => {
           totalPendingPayments: {
             $sum: {
               $cond: {
-                if: { $eq: ['$formData.paymentStatus', 'pending'] },
-                then: { $toDouble: '$formData.total' },
+                if: { $eq: ['$paymentStatus', 'pending'] },
+                then: { $toDouble: '$total' },
                 else: 0
               }
             }
@@ -52,10 +67,109 @@ const getBranchStatistics = async (req, res) => {
       {
         $project: {
           _id: 0,
-          branchId: '$_id.branchId',
-          branchName: '$_id.branchName',
+          branchId: '$_id',
+          branchName: 1,
           totalSales: 1,
           totalCompletedPayments: 1,
+          totalPendingPayments: 1,
+          formCount: 1
+        }
+      },
+      {
+        $sort: { branchName: 1 }
+      }
+    ]);
+
+    res.json(branchBusiness);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching branch business data for today', error: error.message });
+  }
+};
+
+const getBranchStatistics = async (req, res) => {
+  try {
+    const owner = req.user;
+
+    if (!owner || owner.role !== 'owner') {
+      return res.status(403).json({ message: 'Unauthorized: Only owners can access this data.' });
+    }
+
+    if (!Array.isArray(owner.branchIds)) {
+      return res.status(500).json({ message: 'Error: owner.branchIds is not an array' });
+    }
+
+    const ownerBranchIds = owner.branchIds
+      .map(id => {
+        try {
+          return new mongoose.Types.ObjectId(id);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+
+    const branchStats = await Branch.aggregate([
+      {
+        $match: { _id: { $in: ownerBranchIds } }
+      },
+      {
+        $lookup: {
+          from: 'formdatas',
+          localField: '_id',
+          foreignField: 'branchId',
+          as: 'formData'
+        }
+      },
+      {
+        $addFields: {
+          totalSales: {
+            $sum: {
+              $map: {
+                input: '$formData',
+                as: 'form',
+                in: { $toDouble: '$$form.total' }
+              }
+            }
+          },
+          totalPaymentsReceived: {
+            $sum: {
+              $map: {
+                input: '$formData',
+                as: 'form',
+                in: {
+                  $cond: [
+                    { $eq: ['$$form.paymentStatus', 'paid'] },
+                    { $toDouble: '$$form.total' },
+                    {
+                      $cond: [
+                        { $ifNull: ['$$form.advance', false] },
+                        { $toDouble: '$$form.advance' },
+                        0
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          formCount: { $size: '$formData' }
+        }
+      },
+      {
+        $addFields: {
+          totalPendingPayments: {
+            $subtract: ['$totalSales', '$totalPaymentsReceived']
+          }
+        }
+      },
+      {
+        $project: {
+          branchId: '$_id',
+          branchName: '$name',
+          totalSales: 1,
+          totalPaymentsReceived: 1,
           totalPendingPayments: 1,
           formCount: 1
         }
@@ -72,11 +186,37 @@ const getBranchStatistics = async (req, res) => {
   }
 };
 
+
 const getSalesmenStatistics = async (req, res) => {
   try {
+    console.log("req.user:", req.user);
+    const owner = req.user;
+
+    if (!owner || owner.role !== 'owner') {
+      return res.status(403).json({ message: 'Unauthorized: Only owners can access this data.' });
+    }
+
+    if (!Array.isArray(owner.branchIds)) {
+      console.error("owner.branchIds is not an array:", owner.branchIds);
+      return res.status(500).json({ message: 'Error: owner.branchIds is not an array' });
+    }
+
+    // Convert the owner's branchIds to ObjectIds using 'new':
+    const ownerBranchIds = owner.branchIds.map(id => {
+        try {
+            return new mongoose.Types.ObjectId(id); // Use 'new' here!
+        } catch (error) {
+            console.warn(`Invalid ObjectId: ${id}.  This branch ID will be excluded.`);
+            return null;
+        }
+    }).filter(id => id !== null);
+
     const salesmanStats = await User.aggregate([
       {
-        $match: { role: 'salesman' }
+        $match: {
+          role: 'salesman',
+          branchIds: { $in: ownerBranchIds }
+        }
       },
       {
         $lookup: {
@@ -102,7 +242,7 @@ const getSalesmenStatistics = async (req, res) => {
           totalCompletedPayments: {
             $sum: {
               $cond: {
-                if: { $eq: ['$formData.paymentStatus', 'completed'] },
+                if: { $eq: ['$formData.paymentStatus', 'paid'] },
                 then: { $toDouble: '$formData.total' },
                 else: 0
               }
@@ -142,5 +282,4 @@ const getSalesmenStatistics = async (req, res) => {
     res.status(500).json({ message: 'Error fetching salesman statistics', error: error.message });
   }
 };
-
-module.exports = { getBranchStatistics, getSalesmenStatistics };
+module.exports = { getBranchStatistics, getSalesmenStatistics, getBranchBusinessToday };

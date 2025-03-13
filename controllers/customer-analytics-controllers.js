@@ -1,4 +1,6 @@
 const FormDataModel = require("../models/optics-model");
+const mongoose = require('mongoose');
+
 
 const getMonthlyCustomerData = async (req, res) => {
     try {
@@ -76,27 +78,47 @@ const getMonthlyRevenueData = async (req, res) => {
 const getTopFrames = async (req, res) => {
     try {
         const { branchIds } = req.user;
-        const filter = { branchId: { $in: branchIds } };
 
+        // 1. Convert branchIds to ObjectIds (with error handling):
+        const objectIdBranchIds = branchIds.map(id => {
+            try {
+                return new mongoose.Types.ObjectId(id);
+            } catch (error) {
+                console.error(`Invalid ObjectId: ${id}`, error);
+                return null; // Skip invalid IDs
+            }
+        }).filter(id => id !== null); // Remove nulls
+
+        // 2. Construct the filter for the $match stage:
+        const filter = {
+            branchId: { $in: objectIdBranchIds },
+            frame: { $ne: null, $ne: "" }  // Exclude null and empty strings
+        };
+
+        // 3. Aggregate the data:
         const frameSales = await FormDataModel.aggregate([
-            { $match: { ...filter, frame: { $ne: null } } },
+            { $match: filter }, // Use the combined filter
             { $group: { _id: "$frame", count: { $sum: 1 } } },
             { $sort: { count: -1 } },
             { $limit: 5 },
         ]);
 
+        console.log("frameSales", frameSales);
+
+        // 4. Format the data:
         const formattedData = frameSales.map((frame) => ({
             frame: frame._id,
             count: frame.count,
         }));
 
+        // 5. Send the response:
         res.status(200).json({ success: true, data: formattedData });
+
     } catch (error) {
         console.error("Error fetching top frames:", error);
         res.status(500).json({ success: false, error: "Failed to retrieve top frames data" });
     }
 };
-
 const getCustomerDataByYear = async (req, res) => {
     try {
         const { branchIds } = req.user;
