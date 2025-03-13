@@ -2,8 +2,8 @@ const FormDataModel = require("../models/optics-model");
 
 const getMonthlyCustomerData = async (req, res) => {
     try {
-        const { role, branchIds } = req.user;
-        const filter = role === "owner" ? {} : { branchId: { $in: branchIds } };
+        const { branchIds } = req.user;
+        const filter = { branchId: { $in: branchIds } };
 
         const currentDate = new Date();
         const year = currentDate.getFullYear();
@@ -13,7 +13,7 @@ const getMonthlyCustomerData = async (req, res) => {
         const endDate = `${year}-${month.toString().padStart(2, "0")}-31`;
 
         const customers = await FormDataModel.find({
-            ...filter, // Apply branch filter
+            ...filter,
             date: { $gte: startDate, $lte: endDate }
         });
 
@@ -29,7 +29,6 @@ const getMonthlyCustomerData = async (req, res) => {
             count: dailyCounts[day],
         })).sort((a, b) => a.day - b.day);
 
-
         res.status(200).json({ success: true, data: formattedData });
     } catch (error) {
         console.error("Error fetching monthly customer data:", error);
@@ -39,8 +38,8 @@ const getMonthlyCustomerData = async (req, res) => {
 
 const getMonthlyRevenueData = async (req, res) => {
     try {
-        const { role, branchIds } = req.user;
-        const filter = role === "owner" ? {} : { branchId: { $in: branchIds } };
+        const { branchIds } = req.user;
+        const filter = { branchId: { $in: branchIds } };
 
         const currentDate = new Date();
         const year = currentDate.getFullYear();
@@ -50,7 +49,7 @@ const getMonthlyRevenueData = async (req, res) => {
         const endDate = `${year}-${month.toString().padStart(2, "0")}-31`;
 
         const orders = await FormDataModel.find({
-            ...filter, // Apply branch filter
+            ...filter,
             date: { $gte: startDate, $lte: endDate }
         });
 
@@ -76,11 +75,11 @@ const getMonthlyRevenueData = async (req, res) => {
 
 const getTopFrames = async (req, res) => {
     try {
-        const { role, branchIds } = req.user;
-        const filter = role === "owner" ? {} : { branchId: { $in: branchIds } };
+        const { branchIds } = req.user;
+        const filter = { branchId: { $in: branchIds } };
 
         const frameSales = await FormDataModel.aggregate([
-            { $match: { ...filter, frame: { $ne: null } } }, // Apply branch filter
+            { $match: { ...filter, frame: { $ne: null } } },
             { $group: { _id: "$frame", count: { $sum: 1 } } },
             { $sort: { count: -1 } },
             { $limit: 5 },
@@ -100,32 +99,30 @@ const getTopFrames = async (req, res) => {
 
 const getCustomerDataByYear = async (req, res) => {
     try {
-        const { role, branchIds } = req.user;
-        const filter = role === "owner" ? {} : { branchId: { $in: branchIds } };
-
+        const { branchIds } = req.user;
+        const filter = { branchId: { $in: branchIds } };
         const { year } = req.params;
 
         if (!year) {
             return res.status(400).json({ success: false, error: "Year is required" });
         }
 
-        const monthlyCounts = Array(12).fill(0); // Initialize an array for 12 months
+        const monthlyCounts = Array(12).fill(0);
 
         const customers = await FormDataModel.find({
-            ...filter, // Apply branch filter
-            date: { $regex: `^${year}-` } // Match all dates starting with "YYYY-"
+            ...filter,
+            date: { $regex: `^${year}-` }
         });
 
         customers.forEach((customer) => {
-            const month = parseInt(customer.date.split('-')[1], 10); // Extract month
-            monthlyCounts[month - 1] += 1; // Increment count for that month
+            const month = parseInt(customer.date.split('-')[1], 10);
+            monthlyCounts[month - 1] += 1;
         });
 
         const formattedData = monthlyCounts.map((count, index) => ({
             month: index + 1,
             count
         }));
-
 
         res.status(200).json({ success: true, data: formattedData });
     } catch (error) {
@@ -136,46 +133,39 @@ const getCustomerDataByYear = async (req, res) => {
 
 const getNewCustomers = async (req, res) => {
     try {
-        const { role, branchIds } = req.user;
-        const filter = role === "owner" ? {} : { branchId: { $in: branchIds } };
+        const { branchIds } = req.user;
+        const filter = { branchId: { $in: branchIds } };
 
         const currentYear = new Date().getFullYear();
 
-        // Fetch all customers for the current year
         const currentYearCustomers = await FormDataModel.find({
-            ...filter,  // Apply branch filter
+            ...filter,
             date: { $regex: `^${currentYear}-` }
         });
 
-        // Extract unique contact numbers from the current year's customers
         const currentYearContacts = new Set(currentYearCustomers.map(c => c.contact));
 
-        // Find previous customers who had these contacts before the current year
         const previousCustomers = await FormDataModel.find({
-            ...filter, //Apply branch filter
+            ...filter,
             date: { $not: { $regex: `^${currentYear}-` } },
             contact: { $in: Array.from(currentYearContacts) }
         });
 
         const previousContacts = new Set(previousCustomers.map(c => c.contact));
 
-        // Filter new customers (who don't exist in previousContacts)
         const newCustomers = currentYearCustomers.filter(c => !previousContacts.has(c.contact));
 
-        // Create a Map to ensure unique new customers based on phone numbers
         const uniqueNewCustomers = Array.from(
             new Map(newCustomers.map(customer => [customer.contact, customer])).values()
         );
 
-        // Initialize an array for month-wise count (1 to 12)
         const monthWiseCount = Array.from({ length: 12 }, (_, index) => ({
             month: index + 1,
             count: 0
         }));
 
-        // Count new customers per month
         uniqueNewCustomers.forEach(customer => {
-            const month = new Date(customer.date).getMonth(); // Get month (0-11)
+            const month = new Date(customer.date).getMonth();
             monthWiseCount[month].count++;
         });
 
@@ -186,9 +176,10 @@ const getNewCustomers = async (req, res) => {
     }
 };
 
-
-
-
-
-
-module.exports = { getMonthlyCustomerData, getMonthlyRevenueData, getTopFrames, getCustomerDataByYear, getNewCustomers };
+module.exports = {
+    getMonthlyCustomerData,
+    getMonthlyRevenueData,
+    getTopFrames,
+    getCustomerDataByYear,
+    getNewCustomers
+};

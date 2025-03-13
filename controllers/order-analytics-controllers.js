@@ -3,7 +3,12 @@ const FormDataModel = require("../models/optics-model");
 const getSalesSummary = async (req, res) => {
     try {
         const { role, branchIds } = req.user;
-        const filter = role === "owner" ? {} : { branchId: { $in: branchIds } };
+
+        // Construct the filter based on the user's role
+        let filter = {};
+        if (role !== "owner") {
+            filter = { branchId: { $in: branchIds } };
+        }
 
         const sales = await FormDataModel.find(filter);
 
@@ -23,7 +28,7 @@ const getSalesSummary = async (req, res) => {
             contactLensesSold: contactLensCount,
         });
     } catch (error) {
-        console.error("Error fetching sales summary:", error); //added console.error for debugging
+        console.error("Error fetching sales summary:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 };

@@ -2,10 +2,11 @@ const FormDataModel = require("../models/optics-model");
 
 const getAllFormData = async (req, res) => {
     try {
-        const { role, branchIds } = req.user;
-        const filter = role === "owner" ? {} : { branchId: { $in: branchIds } };
+        const { branchIds } = req.user;
 
+        const filter = { branchId: { $in: branchIds } };
         const allData = await FormDataModel.find(filter);
+
         res.status(200).json(allData);
     } catch (error) {
         console.error("Error fetching form data:", error);
@@ -15,11 +16,11 @@ const getAllFormData = async (req, res) => {
 
 const createFormData = async (req, res) => {
     try {
-        const { role, branchIds } = req.user;
+        const { branchIds } = req.user;
         const userBranchId = req.body.branchId;
 
-        // Restrict non-owners to create only in their allowed branches
-        if (role !== "owner" && !branchIds.includes(userBranchId)) {
+        // Restrict creation to allowed branches
+        if (!branchIds.includes(userBranchId)) {
             return res.status(403).json({ success: false, error: "Unauthorized branch access" });
         }
 
@@ -42,19 +43,18 @@ const createFormData = async (req, res) => {
 
 const getFormDataByBillNo = async (req, res) => {
     try {
-        const { role, branchIds } = req.user;
+        const { branchIds } = req.user;
         const billNo = parseInt(req.params.billNo, 10);
         if (isNaN(billNo)) {
             return res.status(400).json({ success: false, error: "Invalid bill number" });
         }
 
-        const filter = { billNo };
-        if (role !== "owner") filter.branchId = { $in: branchIds };
+        const filter = { billNo, branchId: { $in: branchIds } };
 
         const formData = await FormDataModel.findOne(filter);
 
         if (!formData) {
-            return res.status(404).json({ success: false, error: "Form data not found" });
+            return res.status(404).json({ success: false, error: "Form data not found or unauthorized" });
         }
 
         res.status(200).json({ success: true, data: formData });
@@ -64,16 +64,15 @@ const getFormDataByBillNo = async (req, res) => {
     }
 };
 
+
 const getPendingPayments = async (req, res) => {
     try {
-        const { role, branchIds } = req.user;
-        // console.log("Role:", role, "BranchIds:", branchIds);
-        const filter = role === "owner"
-            ? { paymentStatus: "pending" }
-            : { paymentStatus: "pending", branchId: { $in: branchIds } };
+        const { branchIds } = req.user;
+        const filter = { paymentStatus: "pending", branchId: { $in: branchIds } };
 
         const pendingData = await FormDataModel.find(filter);
         const plainData = JSON.parse(JSON.stringify(pendingData));
+
         return res.status(200).json(plainData);
     } catch (error) {
         console.error("Error fetching pending payment data:", error);
@@ -81,9 +80,10 @@ const getPendingPayments = async (req, res) => {
     }
 };
 
+
 const updatePendingStatus = async (req, res) => {
     try {
-        const { role, branchIds } = req.user;
+        const { branchIds } = req.user;
         const billNo = parseInt(req.params.billNo, 10);
         if (isNaN(billNo)) {
             return res.status(400).json({ success: false, error: "Invalid bill number" });
@@ -92,11 +92,8 @@ const updatePendingStatus = async (req, res) => {
         const filter = {
             billNo,
             paymentStatus: "pending",
+            branchId: { $in: branchIds }
         };
-
-        if (role !== "owner") {
-            filter.branchId = { $in: branchIds };
-        }
 
         const updatedForm = await FormDataModel.findOneAndUpdate(
             filter,
@@ -117,14 +114,17 @@ const updatePendingStatus = async (req, res) => {
 
 const getPendingPaymentByBillNo = async (req, res) => {
     try {
-        const { role, branchIds } = req.user;
+        const { branchIds } = req.user;
         const billNo = parseInt(req.params.billNo, 10);
         if (isNaN(billNo)) {
             return res.status(400).json({ success: false, error: "Invalid bill number" });
         }
 
-        const filter = { billNo, paymentStatus: "pending" };
-        if (role !== "owner") filter.branchId = { $in: branchIds };
+        const filter = {
+            billNo,
+            paymentStatus: "pending",
+            branchId: { $in: branchIds }
+        };
 
         const pendingPayment = await FormDataModel.findOne(filter);
 
@@ -138,6 +138,7 @@ const getPendingPaymentByBillNo = async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 };
+
 
 module.exports = {
     createFormData,

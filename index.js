@@ -6,6 +6,7 @@ const mongoose = require("mongoose"); // Import Mongoose
 const connectDB = require("./config/db");
 const formRoutes = require("./routes/optics-routes");
 const authRoutes = require("./routes/authRoutes");
+const statisticsRoutes = require("./routes/statisticRoutes");
 
 dotenv.config();
 connectDB();
@@ -18,6 +19,7 @@ app.use(bodyParser.json());
 
 app.use("/api/forms", formRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/statistics",statisticsRoutes);
 
 
 app.delete("/api/clear-db", async (req, res) => {

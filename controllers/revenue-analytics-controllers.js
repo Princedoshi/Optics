@@ -1,11 +1,14 @@
 const FormDataModel = require("../models/optics-model");
 
-
 const getMonthlyRevenueDataByYear = async (req, res) => {
-
     try {
         const { role, branchIds } = req.user;
-        const filter = role === "owner" ? {} : { branchId: { $in: branchIds } };
+
+        // Construct the filter based on the user's role
+        let filter = {};
+        if (role !== "owner") {
+            filter = { branchId: { $in: branchIds } };
+        }
 
         const { year } = req.params;
 
