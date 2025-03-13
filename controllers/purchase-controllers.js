@@ -2,10 +2,19 @@ const PurchaseHistoryModel = require("../models/purchase-model");
 
 const createPurchase = async (req, res) => {
     try {
+        const { branchIds } = req.user;  // Get branchIds from user
+
+        if (!branchIds || branchIds.length === 0) {
+            return res.status(400).json({ message: "Branch ID is required" }); // Or handle this differently
+        }
+        //For now taking only the first branch ID if the user has multiple assigned.
+         const branchId = branchIds[0];
+
         const purchaseCount = await PurchaseHistoryModel.countDocuments();
         const newPurchase = new PurchaseHistoryModel({
             ...req.body,
             purchaseId: purchaseCount + 1,
+            branchId: branchId   // Add branchId to the purchase
         });
 
         await newPurchase.save();
@@ -18,19 +27,38 @@ const createPurchase = async (req, res) => {
 
 const getAllPurchases = async (req, res) => {
     try {
-        const purchases = await PurchaseHistoryModel.find();
+        const { branchIds } = req.user; // Assuming branchIds are available in req.user
+        console.log("Branch IDs from request:", branchIds); // Debugging log
+
+        // Construct the filter based on the branchIds
+        const filter = { branchId: { $in: branchIds } };
+        console.log("Purchase Filter:", filter);
+
+        // Find purchases matching the filter
+        const purchases = await PurchaseHistoryModel.find(filter);
+        console.log("Found Purchases:", purchases);
+
         res.status(200).json(purchases);
     } catch (error) {
+        console.error("Error fetching purchases:", error);
         res.status(500).json({ message: "Error fetching purchases", error: error.message });
     }
 };
 
 const getPurchaseById = async (req, res) => {
     try {
-        const purchase = await PurchaseHistoryModel.findOne({ purchaseId: req.params.id });
+        const { branchIds } = req.user;
+        const purchaseId = req.params.id;
+
+        const purchase = await PurchaseHistoryModel.findOne({
+            purchaseId: purchaseId,
+            branchId: { $in: branchIds }  // Add branchId filter
+        });
+
         if (!purchase) {
             return res.status(404).json({ message: "Purchase not found" });
         }
+
         res.status(200).json(purchase);
     } catch (error) {
         res.status(500).json({ message: "Error fetching purchase", error: error.message });
@@ -39,8 +67,7 @@ const getPurchaseById = async (req, res) => {
 
 const updatePaymentStatus = async (req, res) => {
     try {
-        console.log("req.params", req.params);
-        console.log("req.body", req.body);
+        const { branchIds } = req.user;
         const { id } = req.params;
         const { paymentStatus } = req.body;
 
@@ -49,7 +76,7 @@ const updatePaymentStatus = async (req, res) => {
         }
 
         const updatedPurchase = await PurchaseHistoryModel.findOneAndUpdate(
-            { purchaseId: id },
+            { purchaseId: id, branchId: { $in: branchIds } },  // Add branchId filter
             { paymentStatus },
             { new: true }
         );
@@ -67,6 +94,7 @@ const updatePaymentStatus = async (req, res) => {
 
 const makePartialPayment = async (req, res) => {
     try {
+        const { branchIds } = req.user;
         const { id } = req.params;
         const { amountPaid } = req.body;
 
@@ -74,7 +102,7 @@ const makePartialPayment = async (req, res) => {
             return res.status(400).json({ message: "Amount paid must be greater than zero." });
         }
 
-        const purchase = await PurchaseHistoryModel.findOne({ purchaseId: id });
+        const purchase = await PurchaseHistoryModel.findOne({ purchaseId: id, branchId: { $in: branchIds } });  // Add branchId filter
 
         if (!purchase) {
             return res.status(404).json({ message: "Purchase not found" });
@@ -104,7 +132,7 @@ const makePartialPayment = async (req, res) => {
         }
 
         const updatedPurchase = await PurchaseHistoryModel.findOneAndUpdate(
-            { purchaseId: id },
+            { purchaseId: id, branchId: { $in: branchIds } },  // Add branchId filter
             {
                 $set: {
                     advancePaid: newAdvancePaid,

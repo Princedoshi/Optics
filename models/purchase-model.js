@@ -18,7 +18,11 @@ const PurchaseHistorySchema = new mongoose.Schema({
     advancePaid: { type: Number, default: 0 },
     balanceDue: { type: Number, required: true },
     paymentStatus: { type: String, enum: ["Paid", "Pending", "Partial"], required: true },
-    notes: { type: String }
+    notes: { type: String },
+
+    // Add branch reference:  This is the crucial part.
+    branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },  //  Required is important
+
 }, { timestamps: true });
 
 const PurchaseHistoryModel = mongoose.model("PurchaseHistory", PurchaseHistorySchema);
