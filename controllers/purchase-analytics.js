@@ -2,11 +2,18 @@ const PurchaseHistory = require("../models/purchase-model");
 
 const getMonthlyPurchaseDistribution = async (req, res) => {
     try {
+        const { branchIds } = req.user;  // Get the branchIds from req.user
+
         const purchases = await PurchaseHistory.aggregate([
             {
+                $match: {  // Add a $match stage to filter by branchId
+                    branchId: { $in: branchIds }
+                }
+            },
+            {
                 $group: {
-                    _id: { 
-                        year: { $year: { $dateFromString: { dateString: "$date" } } }, 
+                    _id: {
+                        year: { $year: { $dateFromString: { dateString: "$date" } } },
                         month: { $month: { $dateFromString: { dateString: "$date" } } }
                     },
                     totalPurchases: { $sum: 1 },
