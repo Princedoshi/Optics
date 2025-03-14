@@ -1,20 +1,43 @@
 const PurchaseHistory = require("../models/purchase-model");
+const { ObjectId } = require('mongodb'); // Import ObjectId
 
 const getMonthlyPurchaseDistribution = async (req, res) => {
     try {
-        const { branchIds } = req.user;  // Get the branchIds from req.user
+        const { branchIds } = req.user; 
+
+        
+        if (!Array.isArray(branchIds) || branchIds.length === 0) {
+            console.log("branchIds is empty or not an array. Returning empty data.");
+            return res.json({ success: true, data: [] }); 
+        }
+
+ 
+        const objectIdBranchIds = branchIds.map(id => {
+            try {
+                return (typeof id === 'string' ? new ObjectId(id) : id);
+            } catch (error) {
+                console.error(`Invalid branchId: ${id}.  Skipping.`, error);
+                return null;
+            }
+        }).filter(id => id !== null);  // Filter out invalid IDs
+
+        if (objectIdBranchIds.length === 0) {
+            console.log("No valid ObjectIds found in branchIds. Returning empty data.");
+            return res.json({ success: true, data: [] });  // Return empty data
+        }
+
 
         const purchases = await PurchaseHistory.aggregate([
             {
                 $match: {  // Add a $match stage to filter by branchId
-                    branchId: { $in: branchIds }
+                    branchId: { $in: objectIdBranchIds }
                 }
             },
             {
                 $group: {
                     _id: {
-                        year: { $year: { $dateFromString: { dateString: "$date" } } },
-                        month: { $month: { $dateFromString: { dateString: "$date" } } }
+                        year: { $year: { $dateFromString: { dateString: "$date", format: "%Y-%m-%d" } } }, // Specify the format
+                        month: { $month: { $dateFromString: { dateString: "$date", format: "%Y-%m-%d" } } } // Specify the format
                     },
                     totalPurchases: { $sum: 1 },
                     totalAmount: { $sum: "$totalAmount" }
@@ -22,6 +45,7 @@ const getMonthlyPurchaseDistribution = async (req, res) => {
             },
             { $sort: { "_id.year": 1, "_id.month": 1 } }
         ]);
+
 
         // Convert data into frontend-friendly format
         const formattedData = purchases.map(p => ({
