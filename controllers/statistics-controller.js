@@ -28,20 +28,45 @@ const getBranchBusinessToday = async (req, res) => {
       }
     }).filter(id => id !== null);
 
-    const todayStart = moment().startOf('day').toDate();
-    const todayEnd = moment().endOf('day').toDate();
+    // Get the start and end of the current day in UTC
+    const todayStart = moment.utc().startOf('day').toDate();
+    const todayEnd = moment.utc().endOf('day').toDate();
+
+    console.log("todayStart (UTC):", todayStart);
+    console.log("todayEnd (UTC):", todayEnd);
 
     const branchBusiness = await FormDataModel.aggregate([
       {
+        $addFields: { //add a stage to transform date strings into Date objects.
+          convertedDate: {
+            $dateFromString: {
+              dateString: "$date",
+              format: "%Y-%m-%d", //specify the format
+            },
+          },
+        },
+      },
+      {
         $match: {
           branchId: { $in: ownerBranchIds },
-          date: { $gte: todayStart, $lte: todayEnd }
+          convertedDate: { $gte: todayStart, $lte: todayEnd }, //compare againsed convertedDate
+        },
+      },
+       {
+        $lookup: {
+          from: "branches", // Name of the Branch collection
+          localField: "branchId",
+          foreignField: "_id",
+          as: "branchInfo"
         }
+      },
+      {
+        $unwind: "$branchInfo"
       },
       {
         $group: {
           _id: '$branchId',
-          branchName: { $first: '$branchName' }, 
+          branchName: { $first: '$branchInfo.name' }, // Get the branch name from the branchInfo
           totalSales: { $sum: { $toDouble: '$total' } },
           totalCompletedPayments: {
             $sum: {
