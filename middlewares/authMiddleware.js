@@ -13,7 +13,7 @@ const authenticate = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded; // Attach user payload (userId, role, branchIds) to request
+    req.user = decoded;
     next();
   } catch (err) {
     return res.status(401).json({ message: "Unauthorized: Invalid or expired token" });

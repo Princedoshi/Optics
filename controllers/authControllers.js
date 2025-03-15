@@ -7,14 +7,19 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const registerBranch = async (req, res) => {
   try {
-    const { branchName, location, ownerName, ownerEmail, password } = req.body;
+    const { branchName, location, ownerName, ownerEmail, password, phoneNumber, parent_name } = req.body; // EXTRACT THEM HERE!
 
     const existingBranch = await Branch.findOne({ name: branchName, location });
     if (existingBranch) {
       return res.status(400).json({ message: 'Branch already exists' });
     }
 
-    const newBranch = await Branch.create({ name: branchName, location });
+    const newBranch = await Branch.create({
+      name: branchName,
+      location,
+      phoneNumber, // USE THEM HERE!
+      parent_name  // AND HERE!
+    });
 
     let owner = await User.findOne({ email: ownerEmail });
 
