@@ -24,8 +24,17 @@ const createFormData = async (req, res) => {
             return res.status(403).json({ success: false, error: "Unauthorized branch access" });
         }
 
-        const lastEntry = await FormDataModel.findOne().sort({ billNo: -1 });
-        const newBillNo = lastEntry && !isNaN(lastEntry.billNo) ? lastEntry.billNo + 1 : 1;
+        // Find the last entry for the specific branch
+        const lastEntryForBranch = await FormDataModel.findOne({ branchId: userBranchId }).sort({ billNo: -1 });
+
+        // Determine the new bill number based on the branch's last entry
+        let newBillNo;
+        if (lastEntryForBranch && !isNaN(lastEntryForBranch.billNo)) {
+            newBillNo = lastEntryForBranch.billNo + 1;
+        } else {
+            // If no entries for the branch, start at 1
+            newBillNo = 1;
+        }
 
         const newFormData = new FormDataModel({
             billNo: newBillNo,

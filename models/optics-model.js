@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const FormDataSchema = new mongoose.Schema({
-  billNo: { type: Number, unique: true }, 
+  billNo: { type: Number, required: true}, 
   name: { type: String, required: true },
   contact: { type: String, required: true },
   date: { type: String, required: true },
