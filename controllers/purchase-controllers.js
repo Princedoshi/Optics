@@ -28,15 +28,12 @@ const createPurchase = async (req, res) => {
 const getAllPurchases = async (req, res) => {
     try {
         const { branchIds } = req.user; // Assuming branchIds are available in req.user
-        console.log("Branch IDs from request:", branchIds); // Debugging log
 
         // Construct the filter based on the branchIds
         const filter = { branchId: { $in: branchIds } };
-        console.log("Purchase Filter:", filter);
 
         // Find purchases matching the filter
         const purchases = await PurchaseHistoryModel.find(filter);
-        console.log("Found Purchases:", purchases);
 
         res.status(200).json(purchases);
     } catch (error) {

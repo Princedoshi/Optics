@@ -7,7 +7,6 @@ const getMonthlyPurchaseDistribution = async (req, res) => {
 
         
         if (!Array.isArray(branchIds) || branchIds.length === 0) {
-            console.log("branchIds is empty or not an array. Returning empty data.");
             return res.json({ success: true, data: [] }); 
         }
 
@@ -19,11 +18,10 @@ const getMonthlyPurchaseDistribution = async (req, res) => {
                 console.error(`Invalid branchId: ${id}.  Skipping.`, error);
                 return null;
             }
-        }).filter(id => id !== null);  // Filter out invalid IDs
+        }).filter(id => id !== null)
 
         if (objectIdBranchIds.length === 0) {
-            console.log("No valid ObjectIds found in branchIds. Returning empty data.");
-            return res.json({ success: true, data: [] });  // Return empty data
+            return res.json({ success: true, data: [] });
         }
 
 

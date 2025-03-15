@@ -103,8 +103,6 @@ const getTopFrames = async (req, res) => {
             { $limit: 5 },
         ]);
 
-        console.log("frameSales", frameSales);
-
         // 4. Format the data:
         const formattedData = frameSales.map((frame) => ({
             frame: frame._id,

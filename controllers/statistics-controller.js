@@ -4,10 +4,11 @@ const FormDataModel = require('../models/optics-model');
 const User = require('../models/user');
 const Branch = require('../models/branch');
 const moment = require('moment');
+const { ObjectId } = require('mongodb'); // Import ObjectId
+
 
 const getBranchBusinessToday = async (req, res) => {
   try {
-    console.log("req.user:", req.user);
     const owner = req.user;
 
     if (!owner || owner.role !== 'owner') {
@@ -32,8 +33,6 @@ const getBranchBusinessToday = async (req, res) => {
     const todayStart = moment.utc().startOf('day').toDate();
     const todayEnd = moment.utc().endOf('day').toDate();
 
-    console.log("todayStart (UTC):", todayStart);
-    console.log("todayEnd (UTC):", todayEnd);
 
     const branchBusiness = await FormDataModel.aggregate([
       {
@@ -211,10 +210,8 @@ const getBranchStatistics = async (req, res) => {
   }
 };
 
-
 const getSalesmenStatistics = async (req, res) => {
   try {
-    console.log("req.user:", req.user);
     const owner = req.user;
 
     if (!owner || owner.role !== 'owner') {
@@ -307,4 +304,51 @@ const getSalesmenStatistics = async (req, res) => {
     res.status(500).json({ message: 'Error fetching salesman statistics', error: error.message });
   }
 };
-module.exports = { getBranchStatistics, getSalesmenStatistics, getBranchBusinessToday };
+
+const getBranches = async (req, res) => {
+    try {
+        const { branchIds } = req.user;
+
+
+        // Ensure branchIds is an array and not empty
+        if (!Array.isArray(branchIds) || branchIds.length === 0) {
+   
+            const allBranches = await Branch.find();
+            return res.json({ success: true, data: allBranches });
+        }
+
+        // Convert branchIds to ObjectIds, handling potential errors
+        const objectIdBranchIds = branchIds.map(id => {
+            try {
+                if (typeof id === 'string' && ObjectId.isValid(id)) {
+                    return new ObjectId(id);
+                } else if (id instanceof ObjectId) {
+                    return id;
+                } else {
+                    console.error(`Invalid branchId: ${id}. Skipping.`);
+                    return null;
+                }
+            } catch (error) {
+                console.error(`Error converting branchId: ${id}. Skipping.`, error);
+                return null;
+            }
+        }).filter(id => id !== null);
+
+        if (objectIdBranchIds.length === 0) {
+            return res.json({ success: true, data: [] });
+        }
+
+
+        // Fetch branches that the user has access to
+        const branches = await Branch.find({ _id: { $in: objectIdBranchIds } });
+
+
+        res.json({ success: true, data: branches });
+
+    } catch (error) {
+        console.error("Error fetching branches:", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+module.exports = { getBranchStatistics, getSalesmenStatistics, getBranchBusinessToday, getBranches };

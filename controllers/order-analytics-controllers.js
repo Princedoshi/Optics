@@ -4,7 +4,6 @@ const getSalesSummary = async (req, res) => {
     try {
         const { role, branchIds } = req.user;
 
-        console.log("req.user:", req.user); // Log the user object for inspection
 
         let filter = {};
         if (role === "owner") {
@@ -22,12 +21,10 @@ const getSalesSummary = async (req, res) => {
             // 2. Construct the filter
             filter = { branchId: { $in: objectIdBranchIds } };
 
-            console.log("Filter:", filter); // Log the filter to verify it's correct
         }
 
         // 3. Query the database
         const sales = await FormDataModel.find(filter);
-        console.log("Sales:", sales); // Log the sales data to see what's returned
 
         // 4. Process the sales data
         let frameCount = 0;
