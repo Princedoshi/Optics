@@ -40,22 +40,6 @@ app.delete("/api/clear-db", async (req, res) => {
     }
 });
 
-async function dropBillNoIndex() {
-    try {
-        await FormDataModel.collection.dropIndex('billNo_1');  // Correct index name
-        console.log('Index "billNo_1" dropped successfully.');
-    } catch (err) {
-        if (err.codeName === 'NamespaceNotFound') {
-            console.log('Collection "formdatas" not found, skipping index drop.');
-        } else if (err.code === 26) {
-            console.log('Index "billNo_1" not found, skipping index drop.');
-        } else {
-            console.error('Error dropping index:', err);
-        }
-    }
-}
 
-// Call this function ONCE, then remove the call from your code
-dropBillNoIndex();
 
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
