@@ -7,7 +7,6 @@ const connectDB = require("./config/db");
 const formRoutes = require("./routes/optics-routes");
 const authRoutes = require("./routes/authRoutes");
 const statisticsRoutes = require("./routes/statisticRoutes");
-const FormDataModel = require("./models/optics-model");
 
 dotenv.config();
 connectDB();
@@ -44,3 +43,4 @@ app.delete("/api/clear-db", async (req, res) => {
     }
 });
 
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
