@@ -20,8 +20,12 @@ app.use(bodyParser.json());
 
 app.use("/api/forms", formRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/statistics",statisticsRoutes);
+app.use("/api/statistics", statisticsRoutes);
 
+// Dummy API endpoint
+app.get("/api", (req, res) => {
+    res.status(200).json({ message: "API working fine" });
+});
 
 app.delete("/api/clear-db", async (req, res) => {
     try {
@@ -39,7 +43,5 @@ app.delete("/api/clear-db", async (req, res) => {
         return res.status(500).json({ message: "Error clearing database", error });
     }
 });
-
-
 
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
