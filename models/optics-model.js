@@ -1,15 +1,18 @@
 const mongoose = require("mongoose");
 
 const FormDataSchema = new mongoose.Schema({
-  billNo: { type: Number, required: true}, 
+  billNo: { type: Number, required: true},
   name: { type: String, required: true },
   contact: { type: String, required: true },
   date: { type: String, required: true },
   frame: { type: String },
-  glass: { type: String }, 
-  contactLens: { type: String }, 
-  advance: { type: String }, 
-  balance: { type: String }, 
+  glass: { type: String },
+  contactLens: { type: String },
+  framePrice: { type: String }, // Added framePrice
+  glassPrice: { type: String }, // Added glassPrice
+  contactLensPrice: { type: String }, // Added contactLensPrice
+  advance: { type: String },
+  balance: { type: String },
   total: { type: String, required: true },
   paymentStatus: {
     type: String,
