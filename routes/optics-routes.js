@@ -43,7 +43,7 @@ router.use(authenticate);
 router.post("/add-form", createFormData);
 router.get("/get-data", getAllFormData);
 router.get("/get-data/:billNo", getFormDataByBillNo);
-router.put("/update-form/:billNo", updateFormData); // Add the update route
+router.put("/update-form/:id", updateFormData); // Add the update route
 
 // Customer Analytics Routes
 router.get("/customers/monthly", getMonthlyCustomerData);
