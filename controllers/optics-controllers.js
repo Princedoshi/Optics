@@ -100,7 +100,7 @@ const updatePendingStatus = async (req, res) => {
 
         const updatedForm = await FormDataModel.findOneAndUpdate(
             filter,
-            { paymentStatus: "paid" },
+            { paymentStatus: "completed" },
             { new: true }
         );
 

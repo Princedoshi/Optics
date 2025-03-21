@@ -16,7 +16,7 @@ const FormDataSchema = new mongoose.Schema({
   total: { type: String, required: true },
   paymentStatus: {
     type: String,
-    enum: ["pending", "completed"],
+    enum: ["pending", "completed","paid"],
     required: true,
     default: "pending"
   },
