@@ -2,26 +2,39 @@ const PurchaseHistoryModel = require("../models/purchase-model");
 
 const createPurchase = async (req, res) => {
     try {
-        const { branchIds } = req.user;  // Get branchIds from user
+        const { branchIds } = req.user; // Get branchIds from req.user
+        console.log("req.user: ", req.user);
 
         if (!branchIds || branchIds.length === 0) {
-            return res.status(400).json({ message: "Branch ID is required" }); // Or handle this differently
+            return res.status(400).json({ success: false, error: "User has no assigned branches" });
         }
-        //For now taking only the first branch ID if the user has multiple assigned.
-         const branchId = branchIds[0];
 
-        const purchaseCount = await PurchaseHistoryModel.countDocuments();
+        // For now, taking only the first branch ID if the user has multiple assigned.
+        const userBranchId = branchIds[0];  // Use branchIds[0] from req.user
+
+        // Find the last purchase for the specific branch
+        const lastPurchaseForBranch = await PurchaseHistoryModel.findOne({ branchId: userBranchId }).sort({ purchaseId: -1 });
+
+        // Determine the new purchase ID based on the branch's last entry
+        let newPurchaseId;
+        if (lastPurchaseForBranch && !isNaN(lastPurchaseForBranch.purchaseId)) {
+            newPurchaseId = lastPurchaseForBranch.purchaseId + 1;
+        } else {
+            // If no purchases for the branch, start at 1
+            newPurchaseId = 1;
+        }
+
         const newPurchase = new PurchaseHistoryModel({
+            purchaseId: newPurchaseId,
             ...req.body,
-            purchaseId: purchaseCount + 1,
-            branchId: branchId   // Add branchId to the purchase
+            branchId: userBranchId //set branchID to the userBranchId for the branch
         });
 
         await newPurchase.save();
-        res.status(201).json({ message: "Purchase recorded successfully", purchase: newPurchase });
+        res.status(201).json({ success: true, data: newPurchase });
     } catch (error) {
-        console.error(error)
-        res.status(500).json({ message: "Error creating purchase", error: error.message });
+        console.error("Error creating purchase:", error);
+        res.status(500).json({ success: false, error: error.message });
     }
 };
 
@@ -147,8 +160,6 @@ const makePartialPayment = async (req, res) => {
         res.status(500).json({ message: "Error recording partial payment", error: error.message });
     }
 };
-
-
 
 module.exports = {
     createPurchase,

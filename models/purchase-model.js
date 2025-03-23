@@ -1,10 +1,10 @@
 const mongoose = require("mongoose");
 
 const PurchaseHistorySchema = new mongoose.Schema({
-    purchaseId: { type: Number, unique: true, required: true },
+    purchaseId: { type: Number, required: true },  // Keep required: true
     supplierName: { type: String, required: true },
     supplierContact: { type: String },
-    date: { type: String, required: true },
+    date: { type: Date, required: true },
     items: [
         {
             itemName: { type: String, required: true },
@@ -20,10 +20,13 @@ const PurchaseHistorySchema = new mongoose.Schema({
     paymentStatus: { type: String, enum: ["Paid", "Pending", "Partial"], required: true },
     notes: { type: String },
 
-    // Add branch reference:  This is the crucial part.
-    branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },  //  Required is important
+    // Add branch reference: This is the crucial part.
+    branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },  // Required is important
 
 }, { timestamps: true });
+
+// Add the compound index to enforce uniqueness within each branch
+PurchaseHistorySchema.index({ branchId: 1, purchaseId: 1 }, { unique: true });
 
 const PurchaseHistoryModel = mongoose.model("PurchaseHistory", PurchaseHistorySchema);
 module.exports = PurchaseHistoryModel;
