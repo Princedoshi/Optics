@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const connectDB = require("./config/db");
 const { redisClient, connectRedis } = require("./config/redis-client");
+const {syncDatabases} = require("./sync");
 
 const formRoutes = require("./routes/optics-routes");
 const authRoutes = require("./routes/authRoutes");
@@ -16,6 +17,8 @@ connectRedis(); // 🔥 Connect Redis
 
 const app = express();
 const PORT = process.env.PORT || 1000;
+
+syncDatabases(); // 🔥 Start the sync process
 
 app.use(cors());
 app.use(bodyParser.json());
