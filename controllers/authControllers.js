@@ -8,6 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const registerBranch = async (req, res) => {
   try {
     const { branchName, location, ownerName, ownerEmail, password, phoneNumber, parent_name } = req.body; // EXTRACT THEM HERE!
+    console.log("branchName", branchName);
 
     const existingBranch = await Branch.findOne({ name: branchName, location });
     if (existingBranch) {
@@ -20,6 +21,8 @@ const registerBranch = async (req, res) => {
       phoneNumber, // USE THEM HERE!
       parent_name  // AND HERE!
     });
+
+    console.log("newBranch", newBranch);
 
     let owner = await User.findOne({ email: ownerEmail });
 
@@ -107,9 +110,43 @@ const login = async (req, res) => {
   }
 };
 
+// Function to create an admin user
+const registerAdmin = async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+
+        // Check if an admin user already exists (optional, but often a good idea)
+        const existingAdmin = await User.findOne({ role: 'admin' });
+        if (existingAdmin) {
+            return res.status(400).json({ message: 'An admin user already exists.' });
+        }
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: 'User with this email already exists.' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const adminUser = await User.create({
+            name,
+            email,
+            passwordHash: hashedPassword,
+            role: 'admin',
+        });
+
+        res.status(201).json({ message: 'Admin user created successfully', adminUser });
+
+    } catch (error) {
+        console.error("Error creating admin user:", error);
+        res.status(500).json({ message: 'Error creating admin user', error: error.message });
+    }
+};
+
 
 module.exports = {
   registerBranch,
   registerSalesman,
   login,
+  registerAdmin
 };

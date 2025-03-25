@@ -75,7 +75,7 @@ const createFormData = async (req, res) => {
     }
 };
 
-const getFormDataByBillNo = async (req, res) => {
+const getFormDataByBillNo = async (req, res) => { // No Cache
     const { branchIds } = req.user;
     const billNo = parseInt(req.params.billNo, 10);
     if (isNaN(billNo)) {
@@ -83,27 +83,12 @@ const getFormDataByBillNo = async (req, res) => {
     }
 
     try {
-        const cacheKey = `formData:${billNo}:${branchIds.join(",")}`;
-
-        // Try fetching from cache
-        const cachedData = await redisClient.get(cacheKey);
-        if (cachedData) {
-            console.log("Fetching formData by billNo from cache");
-            return res.status(200).json(JSON.parse(cachedData));
-        }
-
         const filter = { billNo, branchId: { $in: branchIds } };
         const formData = await FormDataModel.findOne(filter);
 
         if (!formData) {
             return res.status(404).json({ success: false, error: "Form data not found or unauthorized" });
         }
-
-        // Store in cache
-        await redisClient.set(cacheKey, JSON.stringify(formData), {
-            EX: 3600, // Cache for 1 hour
-        });
-        console.log("Fetching formData by billNo from DB");
 
         res.status(200).json({ success: true, data: formData });
     } catch (error) {
@@ -113,26 +98,11 @@ const getFormDataByBillNo = async (req, res) => {
 };
 
 
-const getPendingPayments = async (req, res) => {
+const getPendingPayments = async (req, res) => { // No Cache
     try {
         const { branchIds } = req.user;
-        const cacheKey = `pendingPayments:${branchIds.join(",")}`;
-
-        // Try fetching from cache
-        const cachedData = await redisClient.get(cacheKey);
-        if (cachedData) {
-            console.log("Fetching pendingPayments from cache");
-            return res.status(200).json(JSON.parse(cachedData));
-        }
-
         const filter = { paymentStatus: "pending", branchId: { $in: branchIds } };
         const pendingData = await FormDataModel.find(filter);
-
-        // Store in cache
-        await redisClient.set(cacheKey, JSON.stringify(pendingData), {
-            EX: 3600, // Cache for 1 hour
-        });
-        console.log("Fetching pendingPayments from DB");
         res.status(200).json(pendingData);
     } catch (error) {
         console.error("Error fetching pending payment data:", error);
@@ -141,7 +111,7 @@ const getPendingPayments = async (req, res) => {
 };
 
 
-const updatePendingStatus = async (req, res) => {
+const updatePendingStatus = async (req, res) => { // No Cache
     try {
         const { branchIds } = req.user;
         const billNo = parseInt(req.params.billNo, 10);
@@ -176,7 +146,7 @@ const updatePendingStatus = async (req, res) => {
     }
 };
 
-const getPendingPaymentByBillNo = async (req, res) => {
+const getPendingPaymentByBillNo = async (req, res) => { // No Cache
     const { branchIds } = req.user;
     const billNo = parseInt(req.params.billNo, 10);
     if (isNaN(billNo)) {
@@ -184,15 +154,6 @@ const getPendingPaymentByBillNo = async (req, res) => {
     }
 
     try {
-        const cacheKey = `pendingPayment:${billNo}:${branchIds.join(",")}`;
-
-        // Try fetching from cache
-        const cachedData = await redisClient.get(cacheKey);
-        if (cachedData) {
-            console.log("Fetching pendingPayment by billNo from cache");
-            return res.status(200).json(JSON.parse(cachedData));
-        }
-
         const filter = {
             billNo,
             paymentStatus: "pending",
@@ -205,12 +166,6 @@ const getPendingPaymentByBillNo = async (req, res) => {
             return res.status(404).json({ success: false, error: "No pending payment found or unauthorized access" });
         }
 
-        // Store in cache
-        await redisClient.set(cacheKey, JSON.stringify(pendingPayment), {
-            EX: 3600, // Cache for 1 hour
-        });
-        console.log("Fetching pendingPayment by billNo from DB");
-
         res.status(200).json({ success: true, data: pendingPayment });
     } catch (error) {
         console.error("Error fetching pending payment by billNo:", error);
@@ -218,7 +173,7 @@ const getPendingPaymentByBillNo = async (req, res) => {
     }
 };
 
-const updateFormData = async (req, res) => {
+const updateFormData = async (req, res) => { // No Cache
   try {
     const { branchIds } = req.user;
     const formId = req.params.id;
