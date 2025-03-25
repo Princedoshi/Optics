@@ -1,5 +1,3 @@
-//redis-client.js
-
 // redis-client.js
 const { createClient } = require("redis");
 require("dotenv").config();
