@@ -19,7 +19,7 @@ async function syncDatabases() {
         const mainDb = mainClient.db("test");
         const backupDb = backupClient.db("backupDB");
 
-        console.log("Connected to both Atlas clusters. Starting sync...");
+        // console.log("Connected to both Atlas clusters. Starting sync...");
 
         for (const collectionName of collections) {
             const changeStream = mainDb.collection(collectionName).watch();
@@ -28,18 +28,18 @@ async function syncDatabases() {
                     switch (change.operationType) {
                         case "insert":
                             await backupDb.collection(collectionName).insertOne(change.fullDocument);
-                            console.log(`Inserted into ${collectionName}:`, change.fullDocument._id);
+                            // console.log(`Inserted into ${collectionName}:`, change.fullDocument._id);
                             break;
                         case "update":
                             await backupDb.collection(collectionName).updateOne(
                                 { _id: change.documentKey._id },
                                 { $set: change.updateDescription.updatedFields }
                             );
-                            console.log(`Updated in ${collectionName}:`, change.documentKey._id);
+                            // console.log(`Updated in ${collectionName}:`, change.documentKey._id);
                             break;
                         case "delete":
                             await backupDb.collection(collectionName).deleteOne({ _id: change.documentKey._id });
-                            console.log(`Deleted from ${collectionName}:`, change.documentKey._id);
+                            // console.log(`Deleted from ${collectionName}:`, change.documentKey._id);
                             break;
                     }
                 } catch (err) {
@@ -51,7 +51,7 @@ async function syncDatabases() {
         process.on("SIGINT", async () => {
             await mainClient.close();
             await backupClient.close();
-            console.log("Connections closed. Exiting...");
+            // console.log("Connections closed. Exiting...");
             process.exit(0);
         });
 
