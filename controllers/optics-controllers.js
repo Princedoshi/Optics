@@ -7,28 +7,13 @@ const {
     invalidateFormDataByBillNoCache,
 } = require("./cache-invalidation");
 
-const {redisClient} = require("../config/redis-client");
-
 
 const getAllFormData = async (req, res) => {
     try {
         const { branchIds } = req.user;
-        const cacheKey = `allFormData:${branchIds.join(",")}`;
-
-        // Try fetching from cache
-        const cachedData = await redisClient.get(cacheKey);
-        if (cachedData) {
-            console.log("Fetching allFormData from cache");
-            return res.status(200).json(JSON.parse(cachedData));
-        }
-
         const filter = { branchId: { $in: branchIds } };
         const allData = await FormDataModel.find(filter);
 
-        // Store in cache
-        await redisClient.set(cacheKey, JSON.stringify(allData), {
-            EX: 3600, // Cache for 1 hour
-        });
         console.log("Fetching allFormData from DB");
         res.status(200).json(allData);
     } catch (error) {
@@ -66,8 +51,8 @@ const createFormData = async (req, res) => {
 
         await newFormData.save();
         // Invalidate related caches
-        await invalidateAllFormDataCache(branchIds);
-        await invalidatePendingPaymentsCache(branchIds);
+        invalidateAllFormDataCache(branchIds);
+        invalidatePendingPaymentsCache(branchIds);
         res.status(201).json({ success: true, data: newFormData });
     } catch (error) {
         console.error("Error creating form entry:", error);
@@ -135,9 +120,9 @@ const updatePendingStatus = async (req, res) => { // No Cache
             return res.status(404).json({ success: false, error: "Pending payment not found or unauthorized" });
         }
         // Invalidate related caches
-        await invalidatePendingPaymentsCache(branchIds);
-        await invalidatePendingPaymentByBillNoCache(billNo, branchIds);
-        await invalidateFormDataByBillNoCache(billNo, branchIds);
+        invalidatePendingPaymentsCache(branchIds);
+        invalidatePendingPaymentByBillNoCache(billNo, branchIds);
+        invalidateFormDataByBillNoCache(billNo, branchIds);
 
         res.status(200).json({ success: true, message: "Payment status updated to paid", data: updatedForm });
     } catch (error) {
@@ -239,10 +224,10 @@ const updateFormData = async (req, res) => { // No Cache
 
 
       // Invalidate related caches
-      await invalidateAllFormDataCache(branchIds);
-      await invalidateFormDataByBillNoCache(existingData.billNo, branchIds);
-      await invalidatePendingPaymentsCache(branchIds);
-      await invalidatePendingPaymentByBillNoCache(existingData.billNo, branchIds);
+      invalidateAllFormDataCache(branchIds);
+      invalidateFormDataByBillNoCache(existingData.billNo, branchIds);
+      invalidatePendingPaymentsCache(branchIds);
+      invalidatePendingPaymentByBillNoCache(existingData.billNo, branchIds);
 
     res.status(200).json({ success: true, data: updatedFormData });
 
