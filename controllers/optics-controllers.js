@@ -110,11 +110,7 @@ const updatePendingStatus = async (req, res) => { // No Cache
         if (!updatedForm) {
             return res.status(404).json({ success: false, error: "Pending payment not found or unauthorized" });
         }
-        // Invalidate related caches
-        invalidatePendingPaymentsCache(branchIds);
-        invalidatePendingPaymentByBillNoCache(billNo, branchIds);
-        invalidateFormDataByBillNoCache(billNo, branchIds);
-
+      
         res.status(200).json({ success: true, message: "Payment status updated to paid", data: updatedForm });
     } catch (error) {
         console.error("Error updating payment status:", error);
@@ -212,13 +208,6 @@ const updateFormData = async (req, res) => { // No Cache
     if (!updatedFormData) {
       return res.status(404).json({ success: false, error: "Form data not found or unauthorized" });
     }
-
-
-      // Invalidate related caches
-      invalidateAllFormDataCache(branchIds);
-      invalidateFormDataByBillNoCache(existingData.billNo, branchIds);
-      invalidatePendingPaymentsCache(branchIds);
-      invalidatePendingPaymentByBillNoCache(existingData.billNo, branchIds);
 
     res.status(200).json({ success: true, data: updatedFormData });
 
