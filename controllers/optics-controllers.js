@@ -1,11 +1,5 @@
 const FormDataModel = require("../models/optics-model");
 const _ = require('lodash'); // Import lodash for field whitelisting
-const {
-    invalidateAllFormDataCache,
-    invalidatePendingPaymentsCache,
-    invalidatePendingPaymentByBillNoCache,
-    invalidateFormDataByBillNoCache,
-} = require("./cache-invalidation");
 
 
 const getAllFormData = async (req, res) => {
@@ -50,9 +44,6 @@ const createFormData = async (req, res) => {
         });
 
         await newFormData.save();
-        // Invalidate related caches
-        invalidateAllFormDataCache(branchIds);
-        invalidatePendingPaymentsCache(branchIds);
         res.status(201).json({ success: true, data: newFormData });
     } catch (error) {
         console.error("Error creating form entry:", error);
