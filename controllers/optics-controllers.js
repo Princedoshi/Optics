@@ -118,16 +118,17 @@ const updatePendingStatus = async (req, res) => { // No Cache
     }
 };
 
-const getPendingPaymentByBillNo = async (req, res) => { // No Cache
+const getPendingPaymentById = async (req, res) => { // No Cache
     const { branchIds } = req.user;
-    const billNo = parseInt(req.params.billNo, 10);
-    if (isNaN(billNo)) {
-        return res.status(400).json({ success: false, error: "Invalid bill number" });
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ success: false, error: "Invalid order ID" });
     }
 
     try {
         const filter = {
-            billNo,
+            _id: id,
             paymentStatus: "pending",
             branchId: { $in: branchIds }
         };
@@ -140,7 +141,7 @@ const getPendingPaymentByBillNo = async (req, res) => { // No Cache
 
         res.status(200).json({ success: true, data: pendingPayment });
     } catch (error) {
-        console.error("Error fetching pending payment by billNo:", error);
+        console.error("Error fetching pending payment by ID:", error);
         res.status(500).json({ success: false, error: error.message });
     }
 };
@@ -228,6 +229,6 @@ module.exports = {
     getFormDataByBillNo,
     getPendingPayments,
     updatePendingStatus,
-    getPendingPaymentByBillNo,
+    getPendingPaymentById,
     updateFormData
 };

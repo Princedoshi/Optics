@@ -7,11 +7,11 @@ const {
   getFormDataByBillNo,
   getPendingPayments,
   updatePendingStatus,
-  getPendingPaymentByBillNo,
+  
   updateFormData, // Import the new function
-  deleteFormData  // Import the delete function
 } = require("../controllers/optics-controllers");
 
+const {getPendingPaymentById} = require("../controllers/optics-controllers");
 const {
   getMonthlyCustomerData,
   getMonthlyRevenueData,
@@ -68,7 +68,7 @@ router.get("/purchases/monthly", getMonthlyPurchaseDistribution);
 // Pending Payments
 router.get("/pending-payments", getPendingPayments);
 router.put("/update-pending-status/:billNo", updatePendingStatus);
-router.get("/pending-payments/:billNo", getPendingPaymentByBillNo);
+router.get("/pending-payments/:id", getPendingPaymentById);
 
 // Order Analytics
 router.get("/analytics/sales-summary", getSalesSummary);
