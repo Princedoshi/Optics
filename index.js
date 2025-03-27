@@ -4,16 +4,17 @@ const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const connectDB = require("./config/db");
-const { redisClient, connectRedis } = require("./config/redis-client");
+// const { redisClient, connectRedis } = require("./config/redis-client");
 const {syncDatabases} = require("./sync");
 
 const formRoutes = require("./routes/optics-routes");
 const authRoutes = require("./routes/authRoutes");
 const statisticsRoutes = require("./routes/statisticRoutes");
+const feedbackRoutes = require("./routes/feedbackRoutes");
 
 dotenv.config();
 connectDB();
-connectRedis(); // 🔥 Connect Redis
+// connectRedis(); // 🔥 Connect Redis
 
 const app = express();
 const PORT = process.env.PORT || 1000;
@@ -26,6 +27,7 @@ app.use(bodyParser.json());
 app.use("/api/forms", formRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/statistics", statisticsRoutes);
+app.use("/api/feedback", feedbackRoutes);
 
 app.get("/api", (req, res) => {
   res.status(200).json({ message: "API working fine" });
