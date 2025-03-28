@@ -7,7 +7,7 @@ const {
   getFormDataByBillNo,
   getPendingPayments,
   updatePendingStatus,
-  
+  deleteFormData,
   updateFormData, // Import the new function
 } = require("../controllers/optics-controllers");
 
@@ -44,6 +44,7 @@ router.post("/add-form", createFormData);
 router.get("/get-data", getAllFormData);
 router.get("/get-data/:billNo", getFormDataByBillNo);
 router.put("/update-form/:id", updateFormData); // Add the update route
+router.delete("/delete-form/:id", deleteFormData);
 
 // Customer Analytics Routes
 router.get("/customers/monthly", getMonthlyCustomerData);

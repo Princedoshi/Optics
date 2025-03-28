@@ -1,5 +1,6 @@
 const FormDataModel = require("../models/optics-model");
-const _ = require('lodash'); // Import lodash for field whitelisting
+const mongoose = require('mongoose'); // Import mongoose
+const _ = require('lodash');
 
 
 const getAllFormData = async (req, res) => {
@@ -110,7 +111,7 @@ const updatePendingStatus = async (req, res) => { // No Cache
         if (!updatedForm) {
             return res.status(404).json({ success: false, error: "Pending payment not found or unauthorized" });
         }
-      
+
         res.status(200).json({ success: true, message: "Payment status updated to paid", data: updatedForm });
     } catch (error) {
         console.error("Error updating payment status:", error);
@@ -147,80 +148,112 @@ const getPendingPaymentById = async (req, res) => { // No Cache
 };
 
 const updateFormData = async (req, res) => { // No Cache
-  try {
-    const { branchIds } = req.user;
-    const formId = req.params.id;
+    try {
+        const { branchIds } = req.user;
+        const formId = req.params.id;
 
-    const filter = {
-      _id: formId,
-      branchId: { $in: branchIds }
-    };
+        if (!mongoose.Types.ObjectId.isValid(formId)) {
+            return res.status(400).json({ success: false, error: "Invalid Form ID" });
+        }
 
-    const allowedFields = [
-      'name', 'contact', 'date', 'frame', 'glass', 'contactLens',
-      'framePrice', 'glassPrice', 'contactLensPrice', 'advance',
-      'paymentStatus',
-      'prescription.dist.rightSph', 'prescription.dist.rightCyl', 'prescription.dist.rightAxis',
-      'prescription.dist.leftSph', 'prescription.dist.leftCyl', 'prescription.dist.leftAxis',
-      'prescription.near.rightSph', 'prescription.near.rightCyl', 'prescription.near.rightAxis',
-      'prescription.near.leftSph', 'prescription.near.leftCyl', 'prescription.near.leftAxis',
-      'prescription.notes'
-    ];
+        const filter = {
+            _id: formId,
+            branchId: { $in: branchIds }
+        };
 
-    const updateData = _.pick(req.body, allowedFields);
+        const allowedFields = [
+            'name', 'contact', 'date', 'frame', 'glass', 'contactLens',
+            'framePrice', 'glassPrice', 'contactLensPrice', 'advance',
+            'paymentStatus',
+            'prescription.dist.rightSph', 'prescription.dist.rightCyl', 'prescription.dist.rightAxis',
+            'prescription.dist.leftSph', 'prescription.dist.leftCyl', 'prescription.dist.leftAxis',
+            'prescription.near.rightSph', 'prescription.near.rightCyl', 'prescription.near.rightAxis',
+            'prescription.near.leftSph', 'prescription.near.leftCyl', 'prescription.near.leftAxis',
+            'prescription.notes'
+        ];
 
-    const existingData = await FormDataModel.findOne(filter);
-    if (!existingData) {
-      return res.status(404).json({ success: false, error: "Form data not found or unauthorized" });
+        const updateData = _.pick(req.body, allowedFields);
+
+        const existingData = await FormDataModel.findOne(filter);
+        if (!existingData) {
+            return res.status(404).json({ success: false, error: "Form data not found or unauthorized" });
+        }
+
+        if (
+            updateData.hasOwnProperty('framePrice') ||
+            updateData.hasOwnProperty('glassPrice') ||
+            updateData.hasOwnProperty('contactLensPrice')
+        ) {
+            const framePrice = parseFloat(updateData.framePrice ?? existingData.framePrice) || 0;
+            const glassPrice = parseFloat(updateData.glassPrice ?? existingData.glassPrice) || 0;
+            const contactLensPrice = parseFloat(updateData.contactLensPrice ?? existingData.contactLensPrice) || 0;
+
+            if (!isNaN(framePrice) && !isNaN(glassPrice) && !isNaN(contactLensPrice)) {
+                updateData.total = (framePrice + glassPrice + contactLensPrice).toString();
+            } else {
+                return res.status(400).json({ success: false, error: "Prices must be valid numbers." });
+            }
+        }
+
+        if (updateData.hasOwnProperty('total') || updateData.hasOwnProperty('advance')) {
+            const total = parseFloat(updateData.total ?? existingData.total) || 0;
+            const advance = parseFloat(updateData.advance ?? existingData.advance) || 0;
+
+            if (!isNaN(total) && !isNaN(advance)) {
+                updateData.balance = (total - advance).toString();
+            } else {
+                return res.status(400).json({ success: false, error: "Total and Advance must be valid numbers." });
+            }
+        }
+
+        const updatedFormData = await FormDataModel.findOneAndUpdate(filter, updateData, {
+            new: true,
+            runValidators: true,
+        });
+
+        if (!updatedFormData) {
+            return res.status(404).json({ success: false, error: "Form data not found or unauthorized" });
+        }
+
+        res.status(200).json({ success: true, data: updatedFormData });
+
+    } catch (error) {
+        console.error("Error updating form data:", error);
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ success: false, error: error.message });
+        }
+        res.status(500).json({ success: false, error: error.message });
     }
-
-    if (
-      updateData.hasOwnProperty('framePrice') ||
-      updateData.hasOwnProperty('glassPrice') ||
-      updateData.hasOwnProperty('contactLensPrice')
-    ) {
-      const framePrice = parseFloat(updateData.framePrice ?? existingData.framePrice) || 0;
-      const glassPrice = parseFloat(updateData.glassPrice ?? existingData.glassPrice) || 0;
-      const contactLensPrice = parseFloat(updateData.contactLensPrice ?? existingData.contactLensPrice) || 0;
-
-      if (!isNaN(framePrice) && !isNaN(glassPrice) && !isNaN(contactLensPrice)) {
-        updateData.total = (framePrice + glassPrice + contactLensPrice).toString();
-      } else {
-        return res.status(400).json({ success: false, error: "Prices must be valid numbers." });
-      }
-    }
-
-    if (updateData.hasOwnProperty('total') || updateData.hasOwnProperty('advance')) {
-      const total = parseFloat(updateData.total ?? existingData.total) || 0;
-      const advance = parseFloat(updateData.advance ?? existingData.advance) || 0;
-
-      if (!isNaN(total) && !isNaN(advance)) {
-        updateData.balance = (total - advance).toString();
-      } else {
-        return res.status(400).json({ success: false, error: "Total and Advance must be valid numbers." });
-      }
-    }
-
-    const updatedFormData = await FormDataModel.findOneAndUpdate(filter, updateData, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!updatedFormData) {
-      return res.status(404).json({ success: false, error: "Form data not found or unauthorized" });
-    }
-
-    res.status(200).json({ success: true, data: updatedFormData });
-
-  } catch (error) {
-    console.error("Error updating form data:", error);
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({ success: false, error: error.message });
-    }
-    res.status(500).json({ success: false, error: error.message });
-  }
 };
 
+
+const deleteFormData = async (req, res) => {
+    try {
+        const { branchIds } = req.user;
+        const formId = req.params.id;
+
+        if (!mongoose.Types.ObjectId.isValid(formId)) {
+            return res.status(400).json({ success: false, error: "Invalid Form ID" });
+        }
+
+        const filter = {
+            _id: formId,
+            branchId: { $in: branchIds }
+        };
+
+        const deletedFormData = await FormDataModel.findOneAndDelete(filter);
+
+        if (!deletedFormData) {
+            return res.status(404).json({ success: false, error: "Form data not found or unauthorized" });
+        }
+
+        res.status(200).json({ success: true, message: "Form data deleted successfully" });
+
+    } catch (error) {
+        console.error("Error deleting form data:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
 
 
 module.exports = {
@@ -230,5 +263,6 @@ module.exports = {
     getPendingPayments,
     updatePendingStatus,
     getPendingPaymentById,
-    updateFormData
+    updateFormData,
+    deleteFormData
 };
