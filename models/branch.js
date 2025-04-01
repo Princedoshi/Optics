@@ -26,6 +26,12 @@ const branchSchema = new mongoose.Schema({
     trim: true,
   },
 
+  googlePlaceId: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+
 }, { timestamps: true });
 
 const Branch = mongoose.model('Branch', branchSchema);

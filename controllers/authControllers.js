@@ -81,27 +81,39 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Find user and populate branch details
     const user = await User.findOne({ email }).populate('branchIds');
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
+    // Check password
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
+    // Extract branch IDs
+    const branchIds = user.branchIds.map(b => b._id);
+
+    // Extract Google Place IDs separately
+    const googlePlaceIds = user.branchIds.map(b => ({
+      branchId: b._id,
+      googlePlaceId: b.googlePlaceId,
+    }));
+
+    // Create JWT token
     const token = jwt.sign(
       {
         userId: user._id,
         role: user.role,
-        branchIds: user.branchIds.map(b => b._id),
+        branchIds,
       },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
-
-    res.json({ message: 'Login successful', token, user });
+    res.json({ message: 'Login successful', token, user, googlePlaceIds });
   } catch (error) {
     res.status(500).json({ message: 'Error logging in', error: error.message });
   }
 };
+
 
 const registerAdmin = async (req, res) => {
   try {
