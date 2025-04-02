@@ -7,47 +7,93 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const registerBranch = async (req, res) => {
   try {
-    const { branchName, location, ownerName, ownerEmail, password, phoneNumber, parent_name } = req.body;
-    console.log("branchName", branchName);
+    // 1. Destructure googlePlaceId from the request body
+    const {
+      branchName,
+      location,
+      ownerName,
+      ownerEmail,
+      password,
+      phoneNumber,
+      parent_name,
+      googlePlaceId // <-- Add this
+    } = req.body;
+
+    console.log("Received data:", req.body); // Log received data for debugging
+
+    // Optional but recommended: Add validation check for googlePlaceId early
+    if (!googlePlaceId || typeof googlePlaceId !== 'string' || googlePlaceId.trim() === '') {
+        return res.status(400).json({ message: 'A valid Google Place ID is required.' });
+    }
+     if (!branchName || !location || !ownerName || !ownerEmail || !password || !phoneNumber || !parent_name) {
+       return res.status(400).json({ message: 'Missing one or more required fields.' });
+     }
+
 
     const existingBranch = await Branch.findOne({ name: branchName, location });
     if (existingBranch) {
-      return res.status(400).json({ message: 'Branch already exists' });
+      // Maybe add googlePlaceId check here too if it should be unique per name/location
+      return res.status(400).json({ message: 'Branch with this name and location already exists' });
     }
 
+    // 2. Include googlePlaceId when creating the new branch
     const newBranch = await Branch.create({
       name: branchName,
       location,
       phoneNumber,
-      parent_name
+      parent_name,
+      googlePlaceId: googlePlaceId.trim() // <-- Pass it here (trimming is good practice)
     });
 
-    console.log("newBranch", newBranch);
+    console.log("New branch created:", newBranch);
 
+    // --- Owner creation/update logic (remains the same) ---
     let owner = await User.findOne({ email: ownerEmail });
 
     if (owner) {
-      if (!owner.branchIds.includes(newBranch._id)) {
+       // Check if branch ID is already associated (important for idempotency)
+      if (!owner.branchIds.some(id => id.equals(newBranch._id))) {
         owner.branchIds.push(newBranch._id);
         await owner.save();
+         console.log(`Branch ${newBranch._id} added to existing owner ${ownerEmail}`);
+      } else {
+           console.log(`Branch ${newBranch._id} already associated with owner ${ownerEmail}`);
       }
     } else {
+      // Hash password only if creating a new user
       const hashedPassword = await bcrypt.hash(password, 10);
       owner = await User.create({
         name: ownerName,
         email: ownerEmail,
         passwordHash: hashedPassword,
         role: 'owner',
-        branchIds: [newBranch._id],
+        branchIds: [newBranch._id], // Associate the new branch
       });
+       console.log(`New owner ${ownerEmail} created with branch ${newBranch._id}`);
     }
+    // --- End Owner logic ---
 
+
+    // Return success response
     res.status(201).json({
       message: 'Branch registered successfully',
       branch: newBranch,
-      owner,
+      // Avoid sending sensitive owner info like passwordHash back unless necessary
+       owner: { _id: owner._id, name: owner.name, email: owner.email, role: owner.role, branchIds: owner.branchIds },
     });
+
   } catch (error) {
+    // Log the detailed error for server-side debugging
+    console.error("Error registering branch:", error);
+
+     // Handle potential validation errors more specifically
+     if (error.name === 'ValidationError') {
+        // Extract meaningful messages from Mongoose validation error
+        const messages = Object.values(error.errors).map(el => el.message);
+        return res.status(400).json({ message: "Validation failed", errors: messages });
+    }
+
+    // Generic server error for other issues
     res.status(500).json({ message: 'Error registering branch', error: error.message });
   }
 };

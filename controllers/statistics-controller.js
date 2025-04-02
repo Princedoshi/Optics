@@ -157,35 +157,44 @@ const getBranchStatistics = async (req, res) => {
               }
             }
           },
-          totalPaymentsReceived: {
+         totalPaymentsReceived: {
+  $sum: {
+    $map: {
+      input: '$formData',
+      as: 'form',
+      in: {
+        $cond: [
+          { $in: ['$$form.paymentStatus', ['paid', 'completed']] },
+          { $toDouble: '$$form.total' },
+          {
+            $cond: [
+              { $ifNull: ['$$form.advance', false] },
+              { $toDouble: '$$form.advance' },
+              0
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
+,
+          totalPendingPayments: {
             $sum: {
               $map: {
                 input: '$formData',
                 as: 'form',
                 in: {
                   $cond: [
-                    { $eq: ['$$form.paymentStatus', 'paid'] },
-                    { $toDouble: '$$form.total' },
-                    {
-                      $cond: [
-                        { $ifNull: ['$$form.advance', false] },
-                        { $toDouble: '$$form.advance' },
-                        0
-                      ]
-                    }
+                    { $eq: ['$$form.paymentStatus', 'pending'] },
+                    { $toDouble: '$$form.balance' },
+                    0
                   ]
                 }
               }
             }
           },
           formCount: { $size: '$formData' }
-        }
-      },
-      {
-        $addFields: {
-          totalPendingPayments: {
-            $subtract: ['$totalSales', '$totalPaymentsReceived']
-          }
         }
       },
       {
@@ -209,6 +218,7 @@ const getBranchStatistics = async (req, res) => {
     res.status(500).json({ message: 'Error fetching branch statistics', error: error.message });
   }
 };
+
 
 const getSalesmenStatistics = async (req, res) => {
   try {
