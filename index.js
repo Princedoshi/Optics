@@ -10,7 +10,6 @@ const {syncDatabases} = require("./sync");
 const formRoutes = require("./routes/optics-routes");
 const authRoutes = require("./routes/authRoutes");
 const statisticsRoutes = require("./routes/statisticRoutes");
-const feedbackRoutes = require("./routes/feedbackRoutes");
 
 dotenv.config();
 connectDB();
@@ -27,7 +26,6 @@ app.use(bodyParser.json());
 app.use("/api/forms", formRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/statistics", statisticsRoutes);
-app.use("/api/feedback", feedbackRoutes);
 
 app.get("/api", (req, res) => {
   res.status(200).json({ message: "API working fine" });
