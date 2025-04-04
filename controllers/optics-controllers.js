@@ -92,8 +92,15 @@ const updatePendingStatus = async (req, res) => { // No Cache
     try {
         const { branchIds } = req.user;
         const billNo = parseInt(req.params.billNo, 10);
+        const { paymentType } = req.body; // Get paymentType from request body
+        console.log("Payment Type:", paymentType);
+
         if (isNaN(billNo)) {
             return res.status(400).json({ success: false, error: "Invalid bill number" });
+        }
+
+        if (!paymentType || !["Cash", "Card", "UPI", "Cheque", "other"].includes(paymentType)) {
+            return res.status(400).json({ success: false, error: "Invalid or missing payment type" });
         }
 
         const filter = {
@@ -104,7 +111,7 @@ const updatePendingStatus = async (req, res) => { // No Cache
 
         const updatedForm = await FormDataModel.findOneAndUpdate(
             filter,
-            { paymentStatus: "completed" },
+            { paymentStatus: "completed", paymentType },
             { new: true }
         );
 
@@ -112,12 +119,13 @@ const updatePendingStatus = async (req, res) => { // No Cache
             return res.status(404).json({ success: false, error: "Pending payment not found or unauthorized" });
         }
 
-        res.status(200).json({ success: true, message: "Payment status updated to paid", data: updatedForm });
+        res.status(200).json({ success: true, message: "Payment status updated to completed", data: updatedForm });
     } catch (error) {
         console.error("Error updating payment status:", error);
         res.status(500).json({ success: false, error: error.message });
     }
 };
+
 
 const getPendingPaymentById = async (req, res) => { // No Cache
     const { branchIds } = req.user;
