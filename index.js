@@ -16,7 +16,7 @@ dotenv.config();
 
 // 🔥 Connect Databases
 connectMongoDB();
-connectSupabase(); // Can be used in other routes
+// connectSupabase(); // Can be used in other routes
 
 // connectRedis(); // 🔥 Connect Redis
 
