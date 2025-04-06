@@ -12,7 +12,7 @@ const FormDataSchema = new mongoose.Schema({
   // NEW FIELD FOR CONTACT LENS DURATION
   contactLensDuration: {
     type: String,
-    enum: ["daily", "weekly", "monthly", "3-monthly", "6-monthly", "yearly", "other"],
+    enum: ["daily", "weekly", "monthly", "3-monthly", "6-monthly", "yearly", "other",''],
   },
 
   framePrice: { type: String },
