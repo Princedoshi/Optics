@@ -8,6 +8,13 @@ const FormDataSchema = new mongoose.Schema({
   frame: { type: String },
   glass: { type: String },
   contactLens: { type: String },
+
+  // NEW FIELD FOR CONTACT LENS DURATION
+  contactLensDuration: {
+    type: String,
+    enum: ["daily", "weekly", "monthly", "3-monthly", "6-monthly", "yearly", "other"],
+  },
+
   framePrice: { type: String },
   glassPrice: { type: String },
   contactLensPrice: { type: String },
@@ -22,8 +29,7 @@ const FormDataSchema = new mongoose.Schema({
   },
   paymentType: {
     type: String,
-    enum: ["cash", "card", "UPI", "cheque", "other"], // Added "cheque"
-    // required: true,
+    enum: ["cash", "card", "UPI", "cheque", "other"],
   },
   prescription: {
     dist: {
