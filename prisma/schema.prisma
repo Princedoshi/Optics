@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("SUPABASE_DB_URL")
+}
+
+model Product {
+  id               Int              @id @default(autoincrement())
+  name             String
+  sku              String           @unique
+  category         String
+  brand            String
+  purchase_price   Float?           // Optional, only for non-variant products
+  selling_price    Float?
+  stock_quantity   Int?
+  min_stock_alert  Int?
+  created_at       DateTime         @default(now())
+
+  variants         ProductVariant[] // One-to-many relationship
+}
+
+model ProductVariant {
+  id              Int      @id @default(autoincrement())
+  color           String
+  purchase_price  Float
+  selling_price   Float
+  stock_quantity  Int
+  min_stock_alert Int
+  created_at      DateTime @default(now())
+  productId       Int
+  product         Product  @relation(fields: [productId], references: [id])
+  
+}
+
+model Supplier {
+  id         Int       @id @default(autoincrement())
+  name       String
+  contact    String?
+  created_at DateTime  @default(now())
+
+  // stockMovements StockMovement[] // Comment this until you define the model
+}
+
+
+enum StockType {
+  IN
+  OUT
+}
