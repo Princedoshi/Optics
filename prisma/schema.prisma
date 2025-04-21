@@ -8,42 +8,48 @@ datasource db {
 }
 
 model Product {
-  id               Int              @id @default(autoincrement())
+  id               Int               @id @default(autoincrement())
+  branchId         String
   name             String
-  sku              String           @unique
+  sku              String            // REMOVE @unique from here
   category         String
   brand            String
-  purchase_price   Float?           // Optional, only for non-variant products
+  purchase_price   Float?
   selling_price    Float?
-  stock_quantity   Int?
-  min_stock_alert  Int?
-  created_at       DateTime         @default(now())
+  stock_quantity   Int               @default(0)
+  min_stock_alert  Int               @default(0)
+  created_at       DateTime          @default(now())
+  updated_at       DateTime          @updatedAt
+  variants         ProductVariant[]
 
-  variants         ProductVariant[] // One-to-many relationship
+  @@index([branchId])
+  @@unique([branchId, sku]) // ADD multi-field unique constraint
 }
 
 model ProductVariant {
   id              Int      @id @default(autoincrement())
-  color           String
-  purchase_price  Float
-  selling_price   Float
-  stock_quantity  Int
-  min_stock_alert Int
-  created_at      DateTime @default(now())
+  // branchId removed previously - correct
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId       Int
-  product         Product  @relation(fields: [productId], references: [id])
-  
+  color           String
+  stock_quantity  Int      @default(0)
+  min_stock_alert Int      @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@unique([productId, color])
+  // branchId index removed previously - correct
 }
 
 model Supplier {
-  id         Int       @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
+  branchId   String
   name       String
   contact    String?
-  created_at DateTime  @default(now())
+  created_at DateTime @default(now())
 
-  // stockMovements StockMovement[] // Comment this until you define the model
+  @@index([branchId])
 }
-
 
 enum StockType {
   IN
